@@ -1,68 +1,104 @@
+/*Fonts*/
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Outfit:wght@100..900&display=swap');
+.thin {
+    font-weight: 100;
+    font-style: normal;
+}
+
+.light {
+    font-weight: 300;
+    font-style: normal;
+}
+
+* {
+    font-weight: 400;
+    font-style: normal;
+}
+
+.bold {
+    font-weight: 700;
+    font-style: normal;
+}
+
+.black {
+    font-weight: 900;
+    font-style: normal;
+}
+
+.thin-italic {
+    font-weight: 100;
+    font-style: italic;
+}
+
+.light-italic {
+    font-weight: 300;
+    font-style: italic;
+}
+
+.italic {
+    font-weight: 400;
+    font-style: italic;
+}
+
+.bold-italic {
+    font-weight: 700;
+    font-style: italic;
+}
+
+.black-italic {
+    font-weight: 900;
+    font-style: italic;
+}
+
+
+/*CSS*/
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    --primary-color: #615944;
+    --secondary-color: #beac8b;
+    --terciary-color: #8a5834;
+    --quaternary-color: #1c160f;
+    --background-color: #e1d7bf;
+    --text-color-primary: #1c160f;
+    --text-color-secondary: #e1d7bf;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+* {
+    margin: 0;
+    padding: 0;
+    text-decoration: none;
+    box-sizing: border-box;
 }
-a:hover {
-  color: #535bf2;
+
+
+/* Asegura que el body ocupe toda la pantalla */
+
+html,
+body {
+    height: 100%;
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+    width: 100vw;
+    height: 100vh;
+    /* 100% del alto de la ventana */
+    display: flex;
+    /* Centrado horizontal */
+    align-items: center;
+    /* Centrado vertical */
+    background-color: var(--background-color);
+    /* Ejemplo de color de fondo */
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+#root {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    overflow-y: hidden;
+    justify-content: initial;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.normal {
+    display: flex;
 }

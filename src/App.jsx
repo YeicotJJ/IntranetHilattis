@@ -1,35 +1,73 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import Products from './pages/Products/Products.jsx';
+import Home  from './pages/Home/Home';
+import Login  from './pages/Login/Login.jsx';
+import Generals from './pages/Generals/Generals.jsx';
+import Users from './pages/Users/Users.jsx';
+import Projects from './pages/Projects/Projects.jsx';
+import Variables from './pages/Variables/Variables.jsx';
+import Categories from './pages/Categories/Categories.jsx';
+import Orders from './pages/Orders/Orders.jsx';
+import Navigation from './components/Navigation.jsx';
+import { useState, useEffect } from "react";
+import RutasProtegidas from "./components/RutasProtegidas";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <BrowserRouter>
+      <MainLayout />
+    </BrowserRouter>
+  );
 }
 
-export default App
+// Componente para gestionar la visibilidad de la navegación y las rutas
+function MainLayout() {
+  const location = useLocation();
+
+  // Determinar si se oculta la navegación en ciertas rutas
+  const hideNavigationPaths = ["/"];
+  const isNavigationHidden = hideNavigationPaths.includes(location.pathname);
+
+  // Verificar si el usuario está autenticado
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    sessionStorage.getItem("user-info") === "true"
+  );
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setIsAuthenticated(sessionStorage.getItem("user-info") === "true");
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  // Cambiar la clase en #root cuando se esté en la página de login
+  useEffect(() => {
+    const rootElement = document.getElementById("root");
+    if (location.pathname === "/") {
+      rootElement.classList.add("login");
+    } else {
+      rootElement.classList.remove("login");
+    }
+  }, [location]);
+
+  return (
+    <div className={isNavigationHidden ? "login" : "normal"}>
+      {!isNavigationHidden && <Navigation />}
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/home" element={<RutasProtegidas isAllowed={isAuthenticated}><Home /></RutasProtegidas>} />
+        <Route path="/generals" element={<RutasProtegidas isAllowed={isAuthenticated}><Generals /></RutasProtegidas>} />
+        <Route path="/users" element={<RutasProtegidas isAllowed={isAuthenticated}><Users /></RutasProtegidas>} />
+        <Route path="/projects" element={<RutasProtegidas isAllowed={isAuthenticated}><Projects /></RutasProtegidas>} />
+        <Route path="/products" element={<RutasProtegidas isAllowed={isAuthenticated}><Products /></RutasProtegidas>} />
+        <Route path="/variables" element={<RutasProtegidas isAllowed={isAuthenticated}><Variables /></RutasProtegidas>} />
+        <Route path="/categories" element={<RutasProtegidas isAllowed={isAuthenticated}><Categories /></RutasProtegidas>} />
+        <Route path="/orders" element={<RutasProtegidas isAllowed={isAuthenticated}><Orders /></RutasProtegidas>} />
+      </Routes>
+    </div>
+  );
+}
+
+export default App;
