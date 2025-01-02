@@ -47,6 +47,9 @@ function MainLayout() {
     const rootElement = document.getElementById("root");
     if (location.pathname === "/") {
       rootElement.classList.add("login");
+    }
+    if (location.pathname === "/generals") {
+      rootElement.classList.add("gen");
     } else {
       rootElement.classList.remove("login");
     }

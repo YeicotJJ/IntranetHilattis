@@ -35,16 +35,17 @@ export default function Navigation() {
 
   return (
     <Sidebar 
-    style={{ 
-      display:'flex', 
-      flexDirection:'column', 
-      justifyContent: 'space-between', 
-      height:'100vh', 
-      backgroundColor: '#1c160f', 
-      color: '#e1d7bf', 
-      borderRightStyle:'none', 
-      marginRight:'20px', 
-      overflowY:'hidden'
+    style={{
+      position: 'sticky', // Cambiar a sticky
+    top: 0, // Se mantiene en la parte superior del contenedor
+    display: 'flex', 
+    flexDirection: 'column', 
+    height: '100vh',
+    justifyContent: 'space-between', 
+    backgroundColor: '#1c160f', 
+    color: '#e1d7bf', 
+    borderRightStyle: 'none', 
+    overflowY: 'auto', // Agregar auto para permitir el desplazamiento si el contenido es largo
       }}
       
       collapsed={collapsed}

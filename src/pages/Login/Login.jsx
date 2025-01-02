@@ -36,8 +36,8 @@ export default function Login() {
 			const resultData = await result.json();
 			sessionStorage.setItem("user-info", "true"); // Guardar en sessionStorage
 			sessionStorage.setItem("user-data",JSON.stringify(resultData.usuario));
-			sessionStorage.setItem("token",JSON.stringify(resultData.access));
-			sessionStorage.setItem("toke-refresh",JSON.stringify(resultData.refresh));
+			sessionStorage.setItem("access",JSON.stringify(resultData.access));
+			sessionStorage.setItem("refresh",JSON.stringify(resultData.refresh));
 			navigate("/home"); // Redirigir a la página de inicio
 		} else {
 		setError("Usuario o contraseña incorrectos");
