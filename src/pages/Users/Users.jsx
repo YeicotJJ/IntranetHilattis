@@ -179,6 +179,7 @@ export default function Users() {
 
   return (
     <div style={{ padding: "20px", height: "100%" }}>
+      <div style={{display:"flex"}}>
       <TextField
         label="Buscar usuarios"
         variant="outlined"
@@ -193,6 +194,8 @@ export default function Users() {
           marginBottom: "20px",
           backgroundColor: "var(--terciary-color)",
           color: "var(--text-color-secondary)",
+          width:"20vw",
+          marginLeft:"4vw"
         }}
         onClick={() => {
           setOpenDialog(true);
@@ -201,6 +204,7 @@ export default function Users() {
       >
         Añadir Usuario
       </Button>
+      </div>
       {loading ? (
         <CircularProgress />
       ) : (

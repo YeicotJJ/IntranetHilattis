@@ -11,8 +11,14 @@ import {
   Typography,
   TextField,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Switch,
 } from "@mui/material";
 import { useMediaQuery } from "@mui/material";
+import { BsFillPencilFill, BsFillTrashFill } from "react-icons/bs";
 
 export default function Categories() {
   const [categories, setCategories] = useState([]);
@@ -20,13 +26,29 @@ export default function Categories() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState({
+    imagen: null,
+    nombre: "",
+    descripcion: "",
+    visible: true,
+  });
+  const [selectedCategory, setSelectedCategory] = useState(null);
+
   const isMobile = useMediaQuery("(max-width:600px)");
-  const apiUrlGET=import.meta.env.VITE_APP_API_CATEGORIES_GET;
+  const apiUrlGET = import.meta.env.VITE_APP_API_CATEGORIES_GET;
+  const apiUrlPOST = import.meta.env.VITE_APP_API_CATEGORIES_POST;
+  const apiUrlPUT = import.meta.env.VITE_APP_API_CATEGORIES_PUT;
+  const apiUrlDELETE = import.meta.env.VITE_APP_API_CATEGORIES_DELETE;
+  const token = JSON.parse(sessionStorage.getItem("access"));
 
   const PAGE_SIZE = 10;
 
   useEffect(() => {
-    // Fetch categories data from API
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = () => {
     setLoading(true);
     fetch(apiUrlGET)
       .then((response) => response.json())
@@ -36,7 +58,7 @@ export default function Categories() {
       })
       .finally(() => setLoading(false))
       .catch((error) => console.error("Error fetching categories:", error));
-  }, []);
+  };
 
   const handleSearch = (event) => {
     const term = event.target.value.toLowerCase();
@@ -47,7 +69,7 @@ export default function Categories() {
         category.descripcion.toLowerCase().includes(term)
     );
     setVisibleCategories(filteredCategories.slice(0, PAGE_SIZE));
-    setPage(1); // Reset to the first page when searching
+    setPage(1);
   };
 
   const handleLoadMore = () => {
@@ -63,6 +85,66 @@ export default function Categories() {
     setPage(nextPage);
   };
 
+  const handleDialogOpen = (category = null) => {
+    setSelectedCategory(category);
+    setNewCategory(
+      category || {
+        imagen: null,
+        nombre: "",
+        descripcion: "",
+        visible: true,
+      }
+    );
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setNewCategory({
+      imagen: null,
+      nombre: "",
+      descripcion: "",
+      visible: true,
+    });
+  };
+
+  const handleSaveCategory = () => {
+    const formData = new FormData();
+    formData.append("imagen", newCategory.imagen);
+    formData.append("nombre", newCategory.nombre);
+    formData.append("descripcion", newCategory.descripcion);
+    formData.append("visible", newCategory.visible);
+
+    const method = selectedCategory ? "PUT" : "POST";
+    const url = selectedCategory
+      ? `${apiUrlPUT}${selectedCategory.id}`
+      : apiUrlPOST;
+
+    fetch(url, {
+      method,
+      body: formData,
+      headers:{
+        Authorization: `Bearer ${token}`,
+      }
+    })
+      .then(() => {
+        fetchCategories();
+        handleDialogClose();
+      })
+      .catch((error) => console.error("Error saving category:", error));
+  };
+
+  const handleDeleteCategory = (id) => {
+    fetch(`${apiUrlDELETE}${id}`, { 
+      method: "DELETE" ,
+      headers:{
+        Authorization: `Bearer ${token}`,
+      }
+    })
+      .then(() => fetchCategories())
+      .catch((error) => console.error("Error deleting category:", error));
+  };
+
   if (isMobile) {
     return (
       <div style={{ padding: "20px", textAlign: "center" }}>
@@ -75,24 +157,30 @@ export default function Categories() {
 
   return (
     <div style={{ padding: "20px" }}>
-      <div style={{display:"flex"}}>
-      <TextField
-        label="Buscar categorías"
-        variant="outlined"
-        fullWidth
-        style={{ marginBottom: "20px" }}
-        onChange={handleSearch}
-      />
-      <Button
-        variant="contained"
-        color="primary"
-        style={{width:"20vw", marginBottom: "20px", marginLeft:"4vw"}}
-        onClick={() => console.log("Add new category")}
-      >
-        Añadir Categoría
-      </Button>
+      <div style={{ display: "flex" }}>
+        <TextField
+          label="Buscar categorías"
+          variant="outlined"
+          fullWidth
+          style={{ marginBottom: "20px" }}
+          onChange={handleSearch}
+        />
+        <Button
+          variant="contained"
+          color="primary"
+          style={{
+            width: "20vw",
+            marginBottom: "20px",
+            marginLeft: "4vw",
+            backgroundColor: "var(--terciary-color)",
+            color: "var(--text-color-secondary)",
+          }}
+          onClick={() => handleDialogOpen()}
+        >
+          Añadir Categoría
+        </Button>
       </div>
-      
+
       {loading ? (
         <CircularProgress />
       ) : (
@@ -105,8 +193,6 @@ export default function Categories() {
                   <TableCell>Imagen</TableCell>
                   <TableCell>Nombre</TableCell>
                   <TableCell>Descripción</TableCell>
-                  <TableCell>Fecha de Creación</TableCell>
-                  <TableCell>Última Modificación</TableCell>
                   <TableCell>Visible</TableCell>
                   <TableCell>Acciones</TableCell>
                 </TableRow>
@@ -129,27 +215,20 @@ export default function Categories() {
                     <TableCell>{category.nombre}</TableCell>
                     <TableCell>{category.descripcion}</TableCell>
                     <TableCell>
-                      {new Date(category.fecha_creacion).toLocaleString()}
+                      {category.visible ? "Sí" : "No"}
                     </TableCell>
-                    <TableCell>
-                      {new Date(category.fecha_modificacion).toLocaleString()}
-                    </TableCell>
-                    <TableCell>{category.visible ? "Sí" : "No"}</TableCell>
                     <TableCell>
                       <Button
-                        variant="contained"
-                        color="success"
                         style={{ marginRight: "10px" }}
-                        onClick={() => console.log("Edit category", category.id)}
+                        startIcon={<BsFillPencilFill />}
+                        onClick={() => handleDialogOpen(category)}
                       >
                         Editar
                       </Button>
                       <Button
-                        variant="contained"
                         color="error"
-                        onClick={() =>
-                          console.log("Delete category", category.id)
-                        }
+                        startIcon={<BsFillTrashFill />}
+                        onClick={() => handleDeleteCategory(category.id)}
                       >
                         Eliminar
                       </Button>
@@ -172,6 +251,53 @@ export default function Categories() {
           )}
         </Paper>
       )}
+
+      <Dialog open={dialogOpen} onClose={handleDialogClose}>
+        <DialogTitle>
+          {selectedCategory ? "Editar Categoría" : "Nueva Categoría"}
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Nombre"
+            fullWidth
+            margin="dense"
+            value={newCategory.nombre}
+            onChange={(e) =>
+              setNewCategory({ ...newCategory, nombre: e.target.value })
+            }
+          />
+          <TextField
+            label="Descripción"
+            fullWidth
+            margin="dense"
+            value={newCategory.descripcion}
+            onChange={(e) =>
+              setNewCategory({ ...newCategory, descripcion: e.target.value })
+            }
+          />
+          <TextField
+            type="file"
+            fullWidth
+            margin="dense"
+            onChange={(e) =>
+              setNewCategory({ ...newCategory, imagen: e.target.files[0] })
+            }
+          />
+          <Typography>Visible</Typography>
+          <Switch
+            checked={newCategory.visible}
+            onChange={(e) =>
+              setNewCategory({ ...newCategory, visible: e.target.checked })
+            }
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose}>Cancelar</Button>
+          <Button variant="contained" onClick={handleSaveCategory}>
+            Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
