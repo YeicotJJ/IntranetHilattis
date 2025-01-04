@@ -34,6 +34,7 @@ export default function Categories() {
     visible: true,
   });
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [imageChanged, setImageChanged] = useState(false); // Estado para controlar si la imagen se cambia
 
   const isMobile = useMediaQuery("(max-width:600px)");
   const apiUrlGET = import.meta.env.VITE_APP_API_CATEGORIES_GET;
@@ -95,6 +96,7 @@ export default function Categories() {
         visible: true,
       }
     );
+    setImageChanged(false); // Reset estado de cambio de imagen
     setDialogOpen(true);
   };
 
@@ -106,11 +108,17 @@ export default function Categories() {
       descripcion: "",
       visible: true,
     });
+    setImageChanged(false); // Reset estado al cerrar el diálogo
   };
 
   const handleSaveCategory = () => {
     const formData = new FormData();
-    formData.append("imagen", newCategory.imagen);
+
+    // Si el usuario ha cambiado la imagen, agregarla al formData
+    if (imageChanged && newCategory.imagen) {
+      formData.append("imagen", newCategory.imagen);
+    }
+
     formData.append("nombre", newCategory.nombre);
     formData.append("descripcion", newCategory.descripcion);
     formData.append("visible", newCategory.visible);
@@ -123,9 +131,9 @@ export default function Categories() {
     fetch(url, {
       method,
       body: formData,
-      headers:{
+      headers: {
         Authorization: `Bearer ${token}`,
-      }
+      },
     })
       .then(() => {
         fetchCategories();
@@ -135,14 +143,22 @@ export default function Categories() {
   };
 
   const handleDeleteCategory = (id) => {
-    fetch(`${apiUrlDELETE}${id}`, { 
-      method: "DELETE" ,
-      headers:{
+    fetch(`${apiUrlDELETE}${id}`, {
+      method: "DELETE",
+      headers: {
         Authorization: `Bearer ${token}`,
-      }
+      },
     })
       .then(() => fetchCategories())
       .catch((error) => console.error("Error deleting category:", error));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewCategory({ ...newCategory, imagen: file });
+      setImageChanged(true); // Marcar que se ha cambiado la imagen
+    }
   };
 
   if (isMobile) {
@@ -156,7 +172,7 @@ export default function Categories() {
   }
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div style={{ padding: "20px", width:"81vw" }}>
       <div style={{ display: "flex" }}>
         <TextField
           label="Buscar categorías"
@@ -275,25 +291,36 @@ export default function Categories() {
               setNewCategory({ ...newCategory, descripcion: e.target.value })
             }
           />
-          <TextField
-            type="file"
-            fullWidth
-            margin="dense"
-            onChange={(e) =>
-              setNewCategory({ ...newCategory, imagen: e.target.files[0] })
-            }
-          />
-          <Typography>Visible</Typography>
-          <Switch
-            checked={newCategory.visible}
-            onChange={(e) =>
-              setNewCategory({ ...newCategory, visible: e.target.checked })
-            }
-          />
+          <div style={{ margin: "10px 0" }}>
+            {imageChanged ? (
+              <Typography variant="body2">Imagen seleccionada</Typography>
+            ) : (
+              <Button variant="outlined" component="label">
+                Subir Imagen
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handleFileChange}
+                />
+              </Button>
+            )}
+          </div>
+          <div>
+            <Typography variant="body2">Visible</Typography>
+            <Switch
+              checked={newCategory.visible}
+              onChange={(e) =>
+                setNewCategory({ ...newCategory, visible: e.target.checked })
+              }
+            />
+          </div>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDialogClose}>Cancelar</Button>
-          <Button variant="contained" onClick={handleSaveCategory}>
+          <Button onClick={handleDialogClose} color="secondary">
+            Cancelar
+          </Button>
+          <Button onClick={handleSaveCategory} color="primary">
             Guardar
           </Button>
         </DialogActions>

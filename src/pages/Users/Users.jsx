@@ -178,7 +178,7 @@ export default function Users() {
   }
 
   return (
-    <div style={{ padding: "20px", height: "100%" }}>
+    <div style={{ padding: "20px", height: "100%"}}>
       <div style={{display:"flex"}}>
       <TextField
         label="Buscar usuarios"
