@@ -15,8 +15,10 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
 } from "@mui/material";
 import { useMediaQuery } from "@mui/material";
+import { BsEyeFill, BsEyeSlashFill } from "react-icons/bs";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { BsFillPencilFill, BsFillTrashFill } from "react-icons/bs";
@@ -28,10 +30,13 @@ export default function Users() {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [openDialog, setOpenDialog] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null); // To hold the user data for editing
+  const [currentUser, setCurrentUser] = useState(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [showPassword, setShowPassword] = useState(false); // Toggle visibility of password
   const isMobile = useMediaQuery("(max-width:600px)");
 
-  const { register, handleSubmit, setValue } = useForm();
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm();
   const PAGE_SIZE = 3;
 
   useEffect(() => {
@@ -93,7 +98,6 @@ export default function Users() {
   const handleEditUser = (user) => {
     setCurrentUser(user);
     setOpenDialog(true);
-    // Pre-filling the form for editing
     setValue("dni", user.dni);
     setValue("username", user.username);
     setValue("nombre", user.nombre);
@@ -101,28 +105,41 @@ export default function Users() {
     setValue("email", user.email);
     setValue("phone", user.phone);
     setValue("address", user.address);
-    setValue("password", ""); // Initialize password field when editing
   };
 
-  const handleDeleteUser = async (dni) => {
+  const handleDeleteConfirmation = (user) => {
+    setUserToDelete(user);
+    setConfirmDialogOpen(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+
     const token = JSON.parse(sessionStorage.getItem("access"));
-    const apiUrlDELETE = `${import.meta.env.VITE_APP_API_USERS_DELETE}/${dni}`;
+    const apiUrlDELETE = `${import.meta.env.VITE_APP_API_USERS_DELETE}${userToDelete.dni}`;
+
     try {
       await axios.delete(apiUrlDELETE, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      setUsers(users.filter((user) => user.dni !== dni));
-      setVisibleUsers(visibleUsers.filter((user) => user.dni !== dni));
+
+      setUsers(users.filter((user) => user.dni !== userToDelete.dni));
+      setVisibleUsers(visibleUsers.filter((user) => user.dni !== userToDelete.dni));
     } catch (error) {
       console.error("Error deleting user:", error);
+    } finally {
+      setConfirmDialogOpen(false);
+      setUserToDelete(null);
     }
   };
 
   const onSubmit = async (data) => {
     const token = JSON.parse(sessionStorage.getItem("access"));
-    const apiUrl = currentUser ? `${import.meta.env.VITE_APP_API_USERS_UPDATE}${currentUser.dni}` : import.meta.env.VITE_APP_API_USERS_POST;
+    const apiUrl = currentUser
+      ? `${import.meta.env.VITE_APP_API_USERS_UPDATE}${currentUser.dni}`
+      : import.meta.env.VITE_APP_API_USERS_POST;
     const method = currentUser ? "PUT" : "POST";
 
     try {
@@ -143,17 +160,8 @@ export default function Users() {
       }
 
       setOpenDialog(false);
-      setCurrentUser(null); // Reset current user
-      setSearchTerm(""); // Clear search
-      setPage(1); // Reset page
-      // Reload users after adding/editing
-      const response = await axios.get(apiUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      setUsers(response.data);
+      setCurrentUser(null);
+      window.location.reload(); // Reload the page after saving
     } catch (error) {
       console.error("Error saving user:", error);
     }
@@ -188,7 +196,7 @@ export default function Users() {
         }}
         onClick={() => {
           setOpenDialog(true);
-          setCurrentUser(null); // For creating a new user
+          setCurrentUser(null);
         }}
       >
         Añadir Usuario
@@ -229,7 +237,7 @@ export default function Users() {
                         Editar
                       </Button>
                       <Button
-                        onClick={() => handleDeleteUser(user.dni)}
+                        onClick={() => handleDeleteConfirmation(user)}
                         startIcon={<BsFillTrashFill />}
                         color="error"
                       >
@@ -266,58 +274,116 @@ export default function Users() {
               variant="outlined"
               fullWidth
               margin="normal"
-              {...register("dni", { required: true })}
+              {...register("dni", {
+                required: "El DNI es obligatorio.",
+                minLength: {
+                  value: 8,
+                  message: "El DNI debe tener exactamente 8 dígitos.",
+                },
+                maxLength: {
+                  value: 8,
+                  message: "El DNI debe tener exactamente 8 dígitos.",
+                },
+              })}
+              error={!!errors.dni}
+              helperText={errors.dni?.message}
             />
             <TextField
               label="Username"
               variant="outlined"
               fullWidth
               margin="normal"
-              {...register("username", { required: true })}
+              {...register("username", { required: "El nombre de usuario es obligatorio." })}
+              error={!!errors.username}
+              helperText={errors.username?.message}
             />
             <TextField
               label="Nombre"
               variant="outlined"
               fullWidth
               margin="normal"
-              {...register("nombre", { required: true })}
+              {...register("nombre", { required: "El nombre es obligatorio." })}
+              error={!!errors.nombre}
+              helperText={errors.nombre?.message}
             />
             <TextField
               label="Apellidos"
               variant="outlined"
               fullWidth
               margin="normal"
-              {...register("apellidos", { required: true })}
+              {...register("apellidos", { required: "Los apellidos son obligatorios." })}
+              error={!!errors.apellidos}
+              helperText={errors.apellidos?.message}
             />
             <TextField
               label="Email"
+              type="email"
               variant="outlined"
               fullWidth
               margin="normal"
-              {...register("email", { required: true })}
+              {...register("email", {
+                required: "El email es obligatorio.",
+                pattern: {
+                  value: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+                  message: "Ingrese un email válido.",
+                },
+              })}
+              error={!!errors.email}
+              helperText={errors.email?.message}
             />
             <TextField
               label="Teléfono"
               variant="outlined"
               fullWidth
               margin="normal"
-              {...register("phone", { required: true })}
+              {...register("phone", {
+                required: "El teléfono es obligatorio.",
+                minLength: {
+                  value: 9,
+                  message: "El teléfono debe tener exactamente 9 dígitos.",
+                },
+                maxLength: {
+                  value: 9,
+                  message: "El teléfono debe tener exactamente 9 dígitos.",
+                },
+              })}
+              error={!!errors.phone}
+              helperText={errors.phone?.message}
             />
             <TextField
               label="Dirección"
               variant="outlined"
               fullWidth
               margin="normal"
-              {...register("address", { required: true })}
+              {...register("address", { required: "La dirección es obligatoria." })}
+              error={!!errors.address}
+              helperText={errors.address?.message}
             />
-            <TextField
-              label="Contraseña"
-              type="password"
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              {...register("password", { required: currentUser ? false : true })} // Only required for new users
-            />
+            {!currentUser && (
+              <TextField
+                label="Contraseña"
+                type={showPassword ? "text" : "password"}
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                {...register("password", {
+                  required: "La contraseña es obligatoria.",
+                  minLength: {
+                    value: 8,
+                    message: "La contraseña debe tener al menos 8 caracteres.",
+                  },
+                })}
+                InputProps={{
+                  endAdornment: (
+                    <IconButton onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? <BsEyeSlashFill /> : <BsEyeFill />}
+                    </IconButton>
+                  ),
+                }}
+                error={!!errors.password}
+                helperText={errors.password?.message}
+              />
+            )}
             <DialogActions>
               <Button onClick={() => setOpenDialog(false)} color="secondary">
                 Cancelar
@@ -328,6 +394,30 @@ export default function Users() {
             </DialogActions>
           </form>
         </DialogContent>
+      </Dialog>
+
+      {/* Confirm Delete Dialog */}
+      <Dialog
+        open={confirmDialogOpen}
+        onClose={() => setConfirmDialogOpen(false)}
+      >
+        <DialogTitle>Confirmación de eliminación</DialogTitle>
+        <DialogContent>
+          <Typography>
+            ¿Está seguro de que desea eliminar al usuario seleccionado?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setConfirmDialogOpen(false)}
+            color="secondary"
+          >
+            Cancelar
+          </Button>
+          <Button onClick={confirmDeleteUser} color="error">
+            Eliminar
+          </Button>
+        </DialogActions>
       </Dialog>
     </div>
   );

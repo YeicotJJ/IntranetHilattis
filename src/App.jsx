@@ -59,7 +59,7 @@ function MainLayout() {
     <div className={isNavigationHidden ? "login" : "normal"}>
       {!isNavigationHidden && <Navigation />}
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route index path="/" element={<Login />} />
         <Route path="/home" element={<RutasProtegidas isAllowed={isAuthenticated}><Home /></RutasProtegidas>} />
         <Route path="/generals" element={<RutasProtegidas isAllowed={isAuthenticated}><Generals /></RutasProtegidas>} />
         <Route path="/users" element={<RutasProtegidas isAllowed={isAuthenticated}><Users /></RutasProtegidas>} />
