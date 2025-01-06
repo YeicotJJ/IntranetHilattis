@@ -5,6 +5,8 @@ import Login  from './pages/Login/Login.jsx';
 import Generals from './pages/Generals/Generals.jsx';
 import Users from './pages/Users/Users.jsx';
 import Projects from './pages/Projects/Projects.jsx';
+import NewProject from './pages/Projects/NewProject.jsx';
+import EditProject from './pages/Projects/EditProject.jsx';
 import Variables from './pages/Variables/Variables.jsx';
 import Categories from './pages/Categories/Categories.jsx';
 import Orders from './pages/Orders/Orders.jsx';
@@ -64,6 +66,8 @@ function MainLayout() {
         <Route path="/generals" element={<RutasProtegidas isAllowed={isAuthenticated}><Generals /></RutasProtegidas>} />
         <Route path="/users" element={<RutasProtegidas isAllowed={isAuthenticated}><Users /></RutasProtegidas>} />
         <Route path="/projects" element={<RutasProtegidas isAllowed={isAuthenticated}><Projects /></RutasProtegidas>} />
+        <Route path="/projects/new" element={<RutasProtegidas isAllowed={isAuthenticated}><NewProject /></RutasProtegidas>} />
+        <Route path="/projects/edit/:id" element={<RutasProtegidas isAllowed={isAuthenticated}><EditProject /></RutasProtegidas>} />
         <Route path="/products" element={<RutasProtegidas isAllowed={isAuthenticated}><Products /></RutasProtegidas>} />
         <Route path="/variables" element={<RutasProtegidas isAllowed={isAuthenticated}><Variables /></RutasProtegidas>} />
         <Route path="/categories" element={<RutasProtegidas isAllowed={isAuthenticated}><Categories /></RutasProtegidas>} />
