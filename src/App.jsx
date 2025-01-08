@@ -61,18 +61,19 @@ function MainLayout() {
     <div className={isNavigationHidden ? "login" : "normal"}>
       {!isNavigationHidden && <Navigation />}
       <Routes>
-        <Route index path="/" element={<Login />} />
-        <Route path="/home" element={<RutasProtegidas isAllowed={isAuthenticated}><Home /></RutasProtegidas>} />
-        <Route path="/generals" element={<RutasProtegidas isAllowed={isAuthenticated}><Generals /></RutasProtegidas>} />
-        <Route path="/users" element={<RutasProtegidas isAllowed={isAuthenticated}><Users /></RutasProtegidas>} />
-        <Route path="/projects" element={<RutasProtegidas isAllowed={isAuthenticated}><Projects /></RutasProtegidas>} />
-        <Route path="/projects/new" element={<RutasProtegidas isAllowed={isAuthenticated}><NewProject /></RutasProtegidas>} />
-        <Route path="/projects/edit/:id" element={<RutasProtegidas isAllowed={isAuthenticated}><EditProject /></RutasProtegidas>} />
-        <Route path="/products" element={<RutasProtegidas isAllowed={isAuthenticated}><Products /></RutasProtegidas>} />
-        <Route path="/variables" element={<RutasProtegidas isAllowed={isAuthenticated}><Variables /></RutasProtegidas>} />
-        <Route path="/categories" element={<RutasProtegidas isAllowed={isAuthenticated}><Categories /></RutasProtegidas>} />
-        <Route path="/orders" element={<RutasProtegidas isAllowed={isAuthenticated}><Orders /></RutasProtegidas>} />
-      </Routes>
+  <Route index path="/" element={<Login />} />
+  <Route path="/home" element={<RutasProtegidas><Home /></RutasProtegidas>} />
+  <Route path="/generals" element={<RutasProtegidas><Generals /></RutasProtegidas>} />
+  <Route path="/users" element={<RutasProtegidas><Users /></RutasProtegidas>} />
+  <Route path="/projects" element={<RutasProtegidas><Projects /></RutasProtegidas>} />
+  <Route path="/projects/new" element={<RutasProtegidas><NewProject /></RutasProtegidas>} />
+  <Route path="/projects/edit/:id" element={<RutasProtegidas><EditProject /></RutasProtegidas>} />
+  <Route path="/products" element={<RutasProtegidas><Products /></RutasProtegidas>} />
+  <Route path="/variables" element={<RutasProtegidas><Variables /></RutasProtegidas>} />
+  <Route path="/categories" element={<RutasProtegidas><Categories /></RutasProtegidas>} />
+  <Route path="/orders" element={<RutasProtegidas><Orders /></RutasProtegidas>} />
+</Routes>
+
     </div>
   );
 }

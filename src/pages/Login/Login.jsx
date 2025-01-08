@@ -20,33 +20,44 @@ export default function Login() {
 	}, [isAuthenticated, navigate]);
 
 	async function onSubmit(data) {
-		const username = data.usuario;
-		const password = data.contraseña;
-		const apiUrl = import.meta.env.VITE_APP_API_LOGIN_URL;
-	try {
-		const result = await fetch(apiUrl, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				"Accept": "*/*"
-		},
-		body: JSON.stringify({ username, password }),
-		});
-		if (result.ok) {
-			const resultData = await result.json();
-			sessionStorage.setItem("user-info", "true"); // Guardar en sessionStorage
-			sessionStorage.setItem("user-data",JSON.stringify(resultData.usuario));
-			sessionStorage.setItem("access",JSON.stringify(resultData.access));
-			sessionStorage.setItem("refresh",JSON.stringify(resultData.refresh));
-			navigate("/home"); // Redirigir a la página de inicio
-		} else {
-		setError("Usuario o contraseña incorrectos");
-		}
-	} catch (err) {
-		console.error("Error:", err);
-		setError("Error al iniciar sesión");
-	}
-}
+    const username = data.usuario;
+    const password = data.contraseña;
+    const apiUrl = import.meta.env.VITE_APP_API_LOGIN_URL;
+    try {
+      const result = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "*/*",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+  
+      if (result.ok) {
+        const resultData = await result.json();
+        const user = resultData.usuario;
+  
+        // Verificar si el usuario está inactivo
+        if (!user.is_active) {
+          setError("El usuario está inactivo. Contacte al administrador.");
+          return; // No permitir el ingreso
+        }
+  
+        // Guardar datos del usuario en sessionStorage
+        sessionStorage.setItem("user-info", "true");
+        sessionStorage.setItem("user-data", JSON.stringify(user));
+        sessionStorage.setItem("access", JSON.stringify(resultData.access));
+        sessionStorage.setItem("refresh", JSON.stringify(resultData.refresh));
+        navigate("/home"); // Redirigir a la página de inicio
+      } else {
+        setError("Usuario o contraseña incorrectos");
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setError("Error al iniciar sesión");
+    }
+  }
+  
 
 // Si ya está autenticado, no mostramos el formulario de login
 	if (isAuthenticated) {

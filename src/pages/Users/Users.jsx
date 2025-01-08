@@ -1,170 +1,120 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
+import { useForm } from "react-hook-form";
 import {
+  Button,
+  TextField,
+  Grid,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Button,
-  Paper,
   Typography,
-  TextField,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
+  Paper,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
   IconButton,
+  Tooltip,
+  InputAdornment,
+  useMediaQuery,
 } from "@mui/material";
-import { useMediaQuery } from "@mui/material";
-import { BsEyeFill, BsEyeSlashFill } from "react-icons/bs";
-import axios from "axios";
-import { useForm } from "react-hook-form";
-import { BsFillPencilFill, BsFillTrashFill } from "react-icons/bs";
+import { BsTrash, BsPencil, BsEye, BsEyeSlash } from "react-icons/bs";
 
-export default function Users() {
+const Users = () => {
+  const token = JSON.parse(sessionStorage.getItem("access"));
   const [users, setUsers] = useState([]);
-  const [visibleUsers, setVisibleUsers] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState(null);
-  const [showPassword, setShowPassword] = useState(false); // Toggle visibility of password
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const [isHelping, setHelping]=useState(false);
+  const sessionUserDni = JSON.parse(sessionStorage.getItem("user-data"))?.dni;
+  const urlFetch=import.meta.env.VITE_APP_API_USERS_GET;
+  const urlReg=import.meta.env.VITE_APP_API_USERS_POST;
   const isMobile = useMediaQuery("(max-width:600px)");
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm();
-  const PAGE_SIZE = 3;
+  const fetchUsers = async () => {
+    try {
+      const { data } = await axios.get(`${urlFetch}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(data);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      const token = JSON.parse(sessionStorage.getItem("access"));
-      const apiUrlGET = import.meta.env.VITE_APP_API_USERS_GET;
-
-      try {
-        const response = await axios.get(apiUrlGET, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        const data = response.data;
-        setUsers(data);
-        setVisibleUsers(data.slice(0, PAGE_SIZE));
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
   }, []);
 
-  const handleSearch = (event) => {
-    const term = event.target.value.toLowerCase();
-    setSearchTerm(term);
-    const filteredUsers = users.filter(
-      (user) =>
-        user.dni.toLowerCase().includes(term) ||
-        user.username.toLowerCase().includes(term) ||
-        user.nombre.toLowerCase().includes(term) ||
-        user.apellidos.toLowerCase().includes(term)
-    );
-    setVisibleUsers(filteredUsers.slice(0, PAGE_SIZE));
-    setPage(1);
-  };
-
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    const newVisibleUsers = users
-      .filter(
-        (user) =>
-          user.dni.toLowerCase().includes(searchTerm) ||
-          user.username.toLowerCase().includes(searchTerm) ||
-          user.nombre.toLowerCase().includes(searchTerm) ||
-          user.apellidos.toLowerCase().includes(searchTerm)
-      )
-      .slice(0, PAGE_SIZE * nextPage);
-    setVisibleUsers(newVisibleUsers);
-    setPage(nextPage);
-  };
-
-  const handleEditUser = (user) => {
-    setCurrentUser(user);
-    setOpenDialog(true);
-    setValue("dni", user.dni);
-    setValue("username", user.username);
-    setValue("nombre", user.nombre);
-    setValue("apellidos", user.apellidos);
-    setValue("email", user.email);
-    setValue("phone", user.phone);
-    setValue("address", user.address);
-  };
-
-  const handleDeleteConfirmation = (user) => {
-    setUserToDelete(user);
-    setConfirmDialogOpen(true);
-  };
-
-  const confirmDeleteUser = async () => {
-    if (!userToDelete) return;
-
-    const token = JSON.parse(sessionStorage.getItem("access"));
-    const apiUrlDELETE = `${import.meta.env.VITE_APP_API_USERS_DELETE}${userToDelete.dni}`;
-
+  const handleAddUser = async (data) => {
     try {
-      await axios.delete(apiUrlDELETE, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      data.is_active = true;
+      await axios.post(`${urlReg}`, data, {
+        headers: { Authorization: `Bearer ${token}` },
       });
+      setIsAdding(false);
+      fetchUsers();
+    } catch (error) {
+      console.error("Error adding user:", error);
+    }
+  };
 
-      setUsers(users.filter((user) => user.dni !== userToDelete.dni));
-      setVisibleUsers(visibleUsers.filter((user) => user.dni !== userToDelete.dni));
+  const handleEditUser = async (data) => {
+    try {
+      await axios.put(`${urlFetch}edit/${selectedUser.dni}`, data, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setIsEditing(false);
+      fetchUsers();
+    } catch (error) {
+      console.error("Error editing user:", error);
+    }
+  };
+
+  const handleChangeState = async (dni, isActive) => {
+    try {
+      await axios.put(`${urlFetch}change-state/${dni}`, { is_active: !isActive }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error("Error changing state:", error);
+    }
+  };
+
+  const handleDeleteUser = async (dni) => {
+    try {
+      await axios.delete(`${urlFetch}delete/${dni}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setConfirmDelete(false);
+      fetchUsers();
     } catch (error) {
       console.error("Error deleting user:", error);
-    } finally {
-      setConfirmDialogOpen(false);
-      setUserToDelete(null);
     }
   };
 
-  const onSubmit = async (data) => {
-    const token = JSON.parse(sessionStorage.getItem("access"));
-    const apiUrl = currentUser
-      ? `${import.meta.env.VITE_APP_API_USERS_UPDATE}${currentUser.dni}`
-      : import.meta.env.VITE_APP_API_USERS_POST;
-    const method = currentUser ? "PUT" : "POST";
+  const openEditModal = (user) => {
+    setSelectedUser(user);
+    setIsEditing(true);
+    reset(user);
+  };
 
-    try {
-      if (method === "PUT") {
-        await axios.put(apiUrl, data, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-      } else {
-        await axios.post(apiUrl, data, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-      }
-
-      setOpenDialog(false);
-      setCurrentUser(null);
-      window.location.reload(); // Reload the page after saving
-    } catch (error) {
-      console.error("Error saving user:", error);
-    }
+  const openDeleteModal = (user) => {
+    setSelectedUser(user);
+    setConfirmDelete(true);
   };
 
   if (isMobile) {
@@ -178,251 +128,254 @@ export default function Users() {
   }
 
   return (
-    <div style={{ padding: "20px", height: "100%"}}>
-      <div style={{display:"flex"}}>
-      <TextField
-        label="Buscar usuarios"
-        variant="outlined"
-        fullWidth
-        style={{ marginBottom: "20px" }}
-        onChange={handleSearch}
-      />
-      <Button
-        variant="contained"
-        color="primary"
+    <div
+    
+    style={{
+      marginLeft:"2vw",
+      width:"76.5vw"
+    }}
+
+    >
+      <h1>Gestión de Usuarios</h1>
+      <div style={{marginTop:"20px",width:"100%",display:"flex",justifyContent:"space-between"}}>
+      <Button 
+      variant="contained" 
+      color="primary" 
+      onClick={() => setIsAdding(true)}
         style={{
-          marginBottom: "20px",
+          width: "20vw",
           backgroundColor: "var(--terciary-color)",
           color: "var(--text-color-secondary)",
-          width:"20vw",
-          marginLeft:"4vw"
+          borderRadius:"0.5vw",
         }}
-        onClick={() => {
-          setOpenDialog(true);
-          setCurrentUser(null);
-        }}
-      >
+        >
         Añadir Usuario
       </Button>
-      </div>
-      {loading ? (
-        <CircularProgress />
-      ) : (
-        <Paper>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>DNI</TableCell>
-                  <TableCell>Username</TableCell>
-                  <TableCell>Nombre</TableCell>
-                  <TableCell>Apellidos</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Teléfono</TableCell>
-                  <TableCell>Dirección</TableCell>
-                  <TableCell>Acciones</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {visibleUsers.map((user) => (
-                  <TableRow key={user.dni}>
-                    <TableCell>{user.dni}</TableCell>
-                    <TableCell>{user.username}</TableCell>
-                    <TableCell>{user.nombre}</TableCell>
-                    <TableCell>{user.apellidos}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.phone}</TableCell>
-                    <TableCell>{user.address}</TableCell>
-                    <TableCell>
-                      <Button
-                        onClick={() => handleEditUser(user)}
-                        startIcon={<BsFillPencilFill />}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        onClick={() => handleDeleteConfirmation(user)}
-                        startIcon={<BsFillTrashFill />}
-                        color="error"
-                      >
-                        Eliminar
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          {visibleUsers.length < users.length && (
-            <div style={{ textAlign: "center" }}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleLoadMore}
-                style={{ margin: "20px" }}
-              >
-                Cargar más
-              </Button>
-            </div>
-          )}
-        </Paper>
-      )}
 
-      {/* Dialog for adding/editing a user */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>{currentUser ? "Editar Usuario" : "Añadir Usuario"}</DialogTitle>
-        <DialogContent>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <TextField
-              label="DNI"
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              {...register("dni", {
-                required: "El DNI es obligatorio.",
-                minLength: {
-                  value: 8,
-                  message: "El DNI debe tener exactamente 8 dígitos.",
-                },
-                maxLength: {
-                  value: 8,
-                  message: "El DNI debe tener exactamente 8 dígitos.",
-                },
-              })}
-              error={!!errors.dni}
-              helperText={errors.dni?.message}
-            />
-            <TextField
-              label="Username"
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              {...register("username", { required: "El nombre de usuario es obligatorio." })}
-              error={!!errors.username}
-              helperText={errors.username?.message}
-            />
-            <TextField
-              label="Nombre"
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              {...register("nombre", { required: "El nombre es obligatorio." })}
-              error={!!errors.nombre}
-              helperText={errors.nombre?.message}
-            />
-            <TextField
-              label="Apellidos"
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              {...register("apellidos", { required: "Los apellidos son obligatorios." })}
-              error={!!errors.apellidos}
-              helperText={errors.apellidos?.message}
-            />
-            <TextField
-              label="Email"
-              type="email"
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              {...register("email", {
-                required: "El email es obligatorio.",
-                pattern: {
-                  value: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
-                  message: "Ingrese un email válido.",
-                },
-              })}
-              error={!!errors.email}
-              helperText={errors.email?.message}
-            />
-            <TextField
-              label="Teléfono"
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              {...register("phone", {
-                required: "El teléfono es obligatorio.",
-                minLength: {
-                  value: 9,
-                  message: "El teléfono debe tener exactamente 9 dígitos.",
-                },
-                maxLength: {
-                  value: 9,
-                  message: "El teléfono debe tener exactamente 9 dígitos.",
-                },
-              })}
-              error={!!errors.phone}
-              helperText={errors.phone?.message}
-            />
-            <TextField
-              label="Dirección"
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              {...register("address", { required: "La dirección es obligatoria." })}
-              error={!!errors.address}
-              helperText={errors.address?.message}
-            />
-            {!currentUser && (
-              <TextField
-                label="Contraseña"
-                type={showPassword ? "text" : "password"}
-                variant="outlined"
-                fullWidth
-                margin="normal"
-                {...register("password", {
-                  required: "La contraseña es obligatoria.",
-                  minLength: {
-                    value: 8,
-                    message: "La contraseña debe tener al menos 8 caracteres.",
-                  },
-                })}
-                InputProps={{
-                  endAdornment: (
-                    <IconButton onClick={() => setShowPassword(!showPassword)}>
-                      {showPassword ? <BsEyeSlashFill /> : <BsEyeFill />}
+      <Button 
+      variant="contained" 
+      color="primary" 
+      onClick={() => setHelping(true)}
+        style={{
+          width: "20vw",
+          backgroundColor: "var(--terciary-color)",
+          color: "var(--text-color-secondary)",
+          borderRadius:"0.5vw",
+        }}
+        >
+        Ayuda
+      </Button>
+      
+      </div>
+
+      <TableContainer component={Paper} style={{ marginTop: "20px",maxWidth:"76.5vw" }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>DNI</TableCell>
+              <TableCell>Usuario</TableCell>
+              <TableCell>Nombre</TableCell>
+              <TableCell>Apellidos</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Teléfono</TableCell>
+              <TableCell>Dirección</TableCell>
+              <TableCell>Rol</TableCell>
+              <TableCell>Estado</TableCell>
+              <TableCell>Acciones</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.dni}>
+                <TableCell>{user.dni}</TableCell>
+                <TableCell>{user.username}</TableCell>
+                <TableCell>{user.nombre}</TableCell>
+                <TableCell>{user.apellidos}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>{user.phone}</TableCell>
+                <TableCell>{user.address}</TableCell>
+                <TableCell>{user.rol === "admin" ? "Administrador" : "Trabajador"}</TableCell>
+                <TableCell>{user.is_active ? "Activo" : "Inactivo"}</TableCell>
+                <TableCell>
+                  <Tooltip title="Editar">
+                    <IconButton onClick={() => openEditModal(user)}>
+                      <BsPencil />
                     </IconButton>
-                  ),
-                }}
-                error={!!errors.password}
-                helperText={errors.password?.message}
-              />
-            )}
-            <DialogActions>
-              <Button onClick={() => setOpenDialog(false)} color="secondary">
-                Cancelar
-              </Button>
-              <Button type="submit" color="primary">
-                Guardar
-              </Button>
-            </DialogActions>
-          </form>
-        </DialogContent>
+                  </Tooltip>
+                  <Tooltip title="Eliminar">
+                    <IconButton
+                      onClick={() => openDeleteModal(user)}
+                      disabled={user.is_active}
+                    >
+                      <BsTrash />
+                    </IconButton>
+                  </Tooltip>
+                  <Button
+                    size="small"
+                    onClick={() => handleChangeState(user.dni, user.is_active)}
+                    disabled={sessionUserDni === user.dni}
+                  >
+                    {user.is_active ? "Inactivar" : "Activar"}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Dialog open={isAdding || isEditing} onClose={() => { setIsAdding(false); setIsEditing(false); }}>
+        <DialogTitle>{isAdding ? "Añadir Usuario" : "Editar Usuario"}</DialogTitle>
+        <form onSubmit={handleSubmit(isAdding ? handleAddUser : handleEditUser)}>
+          <DialogContent>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="DNI"
+                  disabled={isEditing}
+                  {...register("dni", { required: true, minLength: 8, maxLength: 8 })}
+                  error={!!errors.dni}
+                  helperText={errors.dni && "DNI debe ser de 8 caracteres"}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Usuario"
+                  {...register("username", { required: true })}
+                  error={!!errors.username}
+                  helperText={errors.username && "El nombre de usuario es obligatorio"}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Contraseña"
+                  type={showPassword ? "text" : "password"}
+                  {...register("password", { required: isAdding })}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => setShowPassword(!showPassword)}>
+                          {showPassword ? <BsEyeSlash /> : <BsEye />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                  disabled={isEditing}
+                  error={!!errors.password}
+                  helperText={errors.password && "La contraseña es obligatoria"}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Nombre"
+                  {...register("nombre", { required: true })}
+                  error={!!errors.nombre}
+                  helperText={errors.nombre && "El nombre es obligatorio"}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Apellidos"
+                  {...register("apellidos", { required: true })}
+                  error={!!errors.apellidos}
+                  helperText={errors.apellidos && "Los apellidos son obligatorios"}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  {...register("email", {
+                    required: true,
+                    pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                  })}
+                  error={!!errors.email}
+                  helperText={errors.email && "Debe ser un correo válido"}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Teléfono"
+                  {...register("phone", { required: true, minLength: 9, maxLength: 9 })}
+                  error={!!errors.phone}
+                  helperText={errors.phone && "Debe ser un teléfono válido de 9 dígitos"}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Dirección"
+                  {...register("address", { required: true })}
+                  error={!!errors.address}
+                  helperText={errors.address && "La dirección es obligatoria"}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Rol</InputLabel>
+                  <Select
+                    defaultValue={null}
+                    {...register("rol", { required: true })}
+                    error={!!errors.rol}
+                    helperText={errors.address && "El rol es obligatorio"}
+                  >
+                    <MenuItem value="admin">Administrador</MenuItem>
+                    <MenuItem value="default">Trabajador</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => { setIsAdding(false); setIsEditing(false); }}>Cancelar</Button>
+            <Button type="submit" color="primary">Guardar</Button>
+          </DialogActions>
+        </form>
       </Dialog>
 
-      {/* Confirm Delete Dialog */}
-      <Dialog
-        open={confirmDialogOpen}
-        onClose={() => setConfirmDialogOpen(false)}
-      >
-        <DialogTitle>Confirmación de eliminación</DialogTitle>
+      <Dialog open={confirmDelete} onClose={() => setConfirmDelete(false)}>
+        <DialogTitle>Confirmar Eliminación</DialogTitle>
         <DialogContent>
-          <Typography>
-            ¿Está seguro de que desea eliminar al usuario seleccionado?
-          </Typography>
+          <p>¿Estás seguro de que deseas eliminar a este usuario?</p>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDelete(false)}>Cancelar</Button>
+          <Button
+            color="error"
+            onClick={() => handleDeleteUser(selectedUser.dni)}
+          >
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={isHelping} onClose={() => setHelping(false)}>
+        <DialogTitle>Ayuda</DialogTitle>
+        <DialogContent>
+          <ul>
+            <li>Para poder eliminar un usuario debe estar inactivo</li>
+            <li>Un usuario inactivo no se puede editar, tienes que activarlo de nuevo</li>
+            <li>Un usuario inactivo no puede ingresar al sistema</li>
+            <li>Se recomienda no colocar tu usuario inactivo</li>
+          </ul>
         </DialogContent>
         <DialogActions>
           <Button
-            onClick={() => setConfirmDialogOpen(false)}
-            color="secondary"
+            color="blue"
+            onClick={() => setHelping(false)}
           >
-            Cancelar
-          </Button>
-          <Button onClick={confirmDeleteUser} color="error">
-            Eliminar
+            Entendido
           </Button>
         </DialogActions>
       </Dialog>
     </div>
   );
-}
+};
+
+export default Users;

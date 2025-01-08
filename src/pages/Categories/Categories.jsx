@@ -169,7 +169,7 @@ export default function Categories() {
         </Typography>
       </div>
     );
-  }
+  } 
 
   return (
     <div style={{ padding: "20px", width:"81vw" }}>
