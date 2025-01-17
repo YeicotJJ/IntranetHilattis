@@ -168,10 +168,15 @@ const Categories = () => {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <TextField label="Buscar categoría" variant="outlined" />
-        <Button variant="contained" startIcon={<BsPlus />} onClick={handleAdd}>
+    <div
+    style={{
+      boxSizing:"border-box",
+      padding:"1.2em",
+    }}
+    >
+      <div style={{ display: 'flex', justifyContent:"space-between", marginBottom: '20px' }}>
+        <TextField label="Buscar categoría" style={{width:"78%"}} variant="outlined" />
+        <Button variant="contained" style={{background:"var(--terciary-color)"}} startIcon={<BsPlus />} onClick={handleAdd}>
           Añadir categoría
         </Button>
       </div>
@@ -201,17 +206,35 @@ const Categories = () => {
                 <TableCell>{category.fecha_creacion}</TableCell>
                 <TableCell>{category.fecha_modificacion}</TableCell>
                 <TableCell>
-                  <Switch checked={category.visible} disabled />
+                  <Switch checked={category.visible} disabled style={{color:"var(--primary-color)"}} />
                 </TableCell>
-                <TableCell>
-                  <IconButton onClick={() => handleEdit(category)}>
+                <TableCell style={{width:"8em"}}>
+                  <IconButton onClick={() => handleEdit(category)}
+                  style={{
+                    color:"var(--primary-color)",
+                    display:"flex",
+                    justifyContent:"space-between",
+                  }}>
                     <BsPencil />
+                    <h6 style={{marginLeft:"10px"}}>Editar</h6>
                   </IconButton>
-                  <IconButton onClick={() => handleEditImage(category)}>
+                  <IconButton onClick={() => handleEditImage(category)}
+                    style={{
+                      color:"var(--primary-color)",
+                      display:"flex",
+                      justifyContent:"space-between",
+                    }}>
                     <BsImage />
+                    <h6 style={{marginLeft:"10px"}}>Imagen</h6>
                   </IconButton>
-                  <IconButton onClick={() => handleDelete(category.id)}>
+                  <IconButton onClick={() => handleDelete(category.id)}
+                    style={{
+                      color:"var(--primary-color)",
+                      display:"flex",
+                      justifyContent:"space-between",
+                    }}>
                     <BsTrash />
+                    <h6 style={{marginLeft:"10px"}}>Eliminar</h6>
                   </IconButton>
                 </TableCell>
               </TableRow>
