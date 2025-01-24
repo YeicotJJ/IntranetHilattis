@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 
 
-export default function SidebarHeader({ userName, userRole, collapsed }) {
+export default function SidebarHeader({ userName="Default", userRole="Default", collapsed }) {
   const navigate = useNavigate();
   const handleLogout = () => {
     // Limpiar autenticación

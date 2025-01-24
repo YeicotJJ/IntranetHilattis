@@ -62,6 +62,7 @@ function MainLayout() {
       {!isNavigationHidden && <Navigation />}
       <Routes>
   <Route index path="/" element={<Login />} />
+  <Route path="*" element={<RutasProtegidas><Login /></RutasProtegidas>} />
   <Route path="/home" element={<RutasProtegidas><Home /></RutasProtegidas>} />
   <Route path="/generals" element={<RutasProtegidas><Generals /></RutasProtegidas>} />
   <Route path="/users" element={<RutasProtegidas><Users /></RutasProtegidas>} />

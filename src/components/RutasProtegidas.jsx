@@ -7,11 +7,16 @@ export default function RutasProtegidas({ children }) {
   const rol = userData.rol || "default"; // Obtener rol del usuario, por defecto "default"
   
   const location = useLocation();
+  const allRoutes=["/home","/generals","/users","/products","/projects","/variables","/categories","/orders"];
   const restrictedRoutes = ["/users", "/generals"]; // Rutas restringidas para el rol "default"
 
   // Si la ruta está restringida y el rol es "default", redirigir al inicio
   if (restrictedRoutes.includes(location.pathname) && rol === "default") {
     return <Navigate to="/home" />;
+  }
+
+  if(!allRoutes.includes(location.pathname)){
+    return <Navigate to="/" />;
   }
 
   // Si no está autenticado, redirigir al login

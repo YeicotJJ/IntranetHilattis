@@ -32,9 +32,16 @@ export default function Navigation() {
   });
 
   // Obtener datos dinámicos del usuario
-  const userData = JSON.parse(sessionStorage.getItem("user-data"));
-  const nombre = userData.nombre;
-  const rol = userData.rol; // Obtener el rol del usuario
+  var userData,nombre,rol="Default";
+  if(JSON.parse(sessionStorage.getItem("user-data"))!=null){
+    userData=JSON.parse(sessionStorage.getItem("user-data"));
+  }
+
+  if(userData!=null){
+    rol=userData.rol;
+    nombre=userData.nombre;
+  }
+
   var rolMuestra="Administrador";
   if(rol=="default"){
     rolMuestra="Trabajador";
