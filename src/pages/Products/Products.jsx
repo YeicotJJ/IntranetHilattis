@@ -28,7 +28,7 @@ const Products = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [openDialog, setOpenDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false); // Nuevo estado para el diálogo de eliminación
   const [dialogType, setDialogType] = useState(""); // 'add', 'edit', 'image', 'delete'
@@ -135,7 +135,8 @@ const Products = () => {
   };
 
   return (
-    <Box>
+    <div style={{boxSizing:"border-box", padding:"1em"}}>
+      <Box>
       {/* Barra de búsqueda y botón de añadir */}
       <Box display="flex" justifyContent="space-between" mb={2}>
         <TextField
@@ -185,27 +186,39 @@ const Products = () => {
               <TableCell>{product.descripcion}</TableCell>
               <TableCell>
                 <div>
-                  <img
-                    src={product.img1 || product.imagen_default}
+                  {
+                    products.img1? products.map((product)(
+                    <img
+                    src={product.img1}
                     alt="img1"
                     style={{ width: "50px", height: "50px", objectFit: "cover" }}
                   />
-                  <img
-                    src={product.img2 || product.imagen_default}
+                    )):null
+                  }
+                {
+                    products.img2? products.map((product)(
+                    <img
+                    src={product.img2}
                     alt="img2"
                     style={{ width: "50px", height: "50px", objectFit: "cover" }}
                   />
-                  <img
-                    src={product.img3 || product.imagen_default}
+                    )):null
+                  }
+                  {
+                    products.img3? products.map((product)(
+                    <img
+                    src={product.img3}
                     alt="img3"
                     style={{ width: "50px", height: "50px", objectFit: "cover" }}
                   />
+                    )):null
+                  }
                 </div>
               </TableCell>
               <TableCell>{product.precio}</TableCell>
               <TableCell>{product.estatus}</TableCell>
               <TableCell>{categories.find(c => c.id === product.id_categoria)?.nombre || 'Sin categoría'}</TableCell>
-              <TableCell>
+              <TableCell style={{display:"flex",paddingBottom:"2.6em"}}>
                 <IconButton
                   onClick={() => {
                     setSelectedProduct(product);
@@ -241,7 +254,7 @@ const Products = () => {
         </TableBody>
       </Table>
       <TablePagination
-        rowsPerPageOptions={[10, 20, 50]}
+        rowsPerPageOptions={[5,10, 20, 50]}
         component="div"
         count={products.length}
         rowsPerPage={rowsPerPage}
@@ -350,6 +363,7 @@ const Products = () => {
         </DialogContent>
       </Dialog>
     </Box>
+    </div>
   );
 };
 
