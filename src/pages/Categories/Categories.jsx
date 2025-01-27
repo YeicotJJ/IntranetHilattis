@@ -201,7 +201,7 @@ const Categories = () => {
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
         <TextField
           label="Buscar categoría"
-          style={{ width: "78%" }}
+          style={{ width: "78%", background:"#f1eadb" }}
           variant="outlined"
           value={searchTerm}
           onChange={handleSearch}

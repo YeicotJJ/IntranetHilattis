@@ -39,7 +39,7 @@ const Projects = () => {
 
   return (
     <div style={{ padding: "20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px",alignItems:"center" }}>
         <input
           type="text"
           placeholder="Buscar proyectos..."
@@ -47,16 +47,15 @@ const Projects = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           style={{
             flex: 1,
-            marginTop:"10px",
             marginRight: "10px",
             padding: "10px",
             fontSize: "16px",
-            background:"transparent",
+            background:"#f1eadb",
             border:"solid",
             borderColor:"grey",
             borderWidth:"1px", 
-            height:"10vh",
-            borderRadius:"1em",
+            height:"8vh",
+            borderRadius:"0.5em",
         }}
         />
         <button
@@ -64,13 +63,14 @@ const Projects = () => {
           style={{
             marginBottom: "20px",
             marginTop: "20px",
-            fontSize:"15px",
+            fontSize:"17px",
             backgroundColor: "var(--terciary-color)",
             color: "var(--text-color-secondary)",
             width:"20vw",
             border:"none",
             padding:"15px",
-            borderRadius:"1em",
+            height:"8vh",
+            borderRadius:"0.5em",
             cursor:"pointer",
           }}
         >
@@ -89,6 +89,7 @@ const Projects = () => {
               borderRadius: "10px",
               overflow: "hidden",
               cursor: "pointer",
+              background:"white",
               boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
             }}
           >

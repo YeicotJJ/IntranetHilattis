@@ -198,7 +198,7 @@ const Products = () => {
             variant="outlined"
             value={searchTerm}
             onChange={handleSearch}
-            style={{ width: "78%" }}
+            style={{ width: "78%", background:"#f1eadb" }}
           />
           <Button
             variant="contained"
