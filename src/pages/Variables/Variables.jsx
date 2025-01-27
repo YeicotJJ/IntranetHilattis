@@ -16,6 +16,7 @@ import {
   TextField,
   Typography,
   Box,
+  Switch,
 } from "@mui/material"
 import { BsPencil, BsTrash, BsPlus, BsUpload } from "react-icons/bs"
 import axios from "axios"
@@ -27,6 +28,7 @@ const Variables = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false)
   const [currentVariable, setCurrentVariable] = useState(null)
   const [previews, setPreviews] = useState({ img1: null, img2: null, img3: null })
+  const [searchTerm, setSearchTerm] = useState("")
   const { control: addControl, handleSubmit: handleAddSubmit, reset: resetAdd } = useForm()
   const { control: editControl, handleSubmit: handleEditSubmit, reset: resetEdit, setValue } = useForm()
 
@@ -164,6 +166,22 @@ const Variables = () => {
     }
   }
 
+  const handleIsVariableChange = async (productId, newValue) => {
+    try {
+      await axios.patch(
+        `${API_PRODUCTS}edit/${productId}`,
+        { is_variable: newValue },
+        {
+          headers: { Authorization: `Bearer ${bearerToken}` },
+        },
+      )
+      fetchProducts() // Refresh the products list after updating
+    } catch (error) {
+      console.error("Error updating is_variable:", error)
+      alert("Failed to update product variable status")
+    }
+  }
+
   const columns = [
     { id: "id_producto", label: "ID", minWidth: 50 },
     { id: "nombre", label: "Nombre del Producto", minWidth: 170 },
@@ -176,6 +194,18 @@ const Variables = () => {
       ),
     },
     {
+      id: "is_variable",
+      label: "Acepta Variables",
+      minWidth: 120,
+      render: (value, row) => (
+        <Switch
+          checked={value}
+          onChange={(e) => handleIsVariableChange(row.id_producto, e.target.checked)}
+          color="primary"
+        />
+      ),
+    },
+    {
       id: "variables",
       label: "Variables",
       minWidth: 170,
@@ -184,7 +214,12 @@ const Variables = () => {
           {variables
             .filter((v) => v.producto === record.id_producto)
             .map((v) => (
-              <Button key={v.id_variante} onClick={() => handleEditVariable(v)} startIcon={<BsPencil />}>
+              <Button
+                key={v.id_variante}
+                onClick={() => handleEditVariable(v)}
+                startIcon={<BsPencil />}
+                disabled={!record.is_variable}
+              >
                 {v.nombre}
               </Button>
             ))}
@@ -196,7 +231,11 @@ const Variables = () => {
       label: "Añadir Variable",
       minWidth: 100,
       render: (_, record) => (
-        <Button onClick={() => handleAddVariable(record.id_producto)} startIcon={<BsPlus />}>
+        <Button
+          onClick={() => handleAddVariable(record.id_producto)}
+          startIcon={<BsPlus />}
+          disabled={!record.is_variable}
+        >
           Añadir Variable
         </Button>
       ),
@@ -239,11 +278,28 @@ const Variables = () => {
       </Box>
     ))
 
+  const filteredProducts = products.filter(
+    (product) =>
+      product.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      variables.some(
+        (variable) =>
+          variable.producto === product.id_producto && variable.nombre.toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
+  )
+
   return (
-    <div style={{width:"81vw",boxSizing:"border-box", padding:"1em"}}>
-        <h2>Variables de Productos</h2>
-        <br></br>
-      <TableContainer component={Paper} style={{width:"100%"}}>
+    <div style={{ width: "81vw", boxSizing: "border-box", padding: "1em" }}>
+      <h2>Variables de Productos</h2>
+      <TextField
+        label="Buscar por nombre de producto o variable"
+        variant="outlined"
+        fullWidth
+        margin="normal"
+        value={searchTerm}
+        style={{background:"#f1eadb",marginBottom:"15px"}}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <TableContainer component={Paper} style={{ width: "100%" }}>
         <Table stickyHeader aria-label="sticky table">
           <TableHead>
             <TableRow>
@@ -255,7 +311,7 @@ const Variables = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {products.map((row) => {
+            {filteredProducts.map((row) => {
               return (
                 <TableRow hover role="checkbox" tabIndex={-1} key={row.id_producto}>
                   {columns.map((column) => {

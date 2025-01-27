@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
 import { Link } from 'react-router-dom';
 import { 
-  BsTools, BsFillGearFill, BsCartFill, BsFillInfoCircleFill, BsPeopleFill, 
-  BsBox2Fill, BsCircleSquare, BsInboxesFill, BsTextIndentRight, BsTextIndentLeft, BsClipboardFill 
+  BsFillGearFill, BsCartFill, BsPeopleFill, 
+  BsBox2Fill, BsTextIndentRight, BsTextIndentLeft,BsBuildingFill, BsFolderFill, BsListCheck, BsGridFill
 } from "react-icons/bs";
 import SidebarHeader from './SidebarHeader';
 
@@ -86,7 +86,7 @@ export default function Navigation() {
             <>
               <MenuItem 
                 component={<Link to={'/generals'} />} 
-                icon={<BsFillInfoCircleFill />} 
+                icon={<BsBuildingFill />} 
                 style={getMenuItemStyles(1)}
                 onMouseEnter={() => setHoveredItem(1)}
                 onMouseLeave={() => setHoveredItem(null)}
@@ -106,7 +106,7 @@ export default function Navigation() {
           )}
           <MenuItem 
             component={<Link to={'/projects'} />} 
-            icon={<BsTools />} 
+            icon={<BsFolderFill />} 
             style={getMenuItemStyles(3)}
             onMouseEnter={() => setHoveredItem(3)}
             onMouseLeave={() => setHoveredItem(null)}
@@ -133,7 +133,7 @@ export default function Navigation() {
           </MenuItem>
           <MenuItem 
             component={<Link to={'/variables'} />} 
-            icon={<BsCircleSquare />} 
+            icon={<BsListCheck />} 
             style={getMenuItemStyles(5)}
             onMouseEnter={() => setHoveredItem(5)}
             onMouseLeave={() => setHoveredItem(null)}
@@ -142,7 +142,7 @@ export default function Navigation() {
           </MenuItem>
           <MenuItem 
             component={<Link to={'/categories'} />} 
-            icon={<BsInboxesFill />} 
+            icon={<BsGridFill />} 
             style={getMenuItemStyles(6)}
             onMouseEnter={() => setHoveredItem(6)}
             onMouseLeave={() => setHoveredItem(null)}
@@ -151,7 +151,7 @@ export default function Navigation() {
           </MenuItem>
           <MenuItem 
             component={<Link to={'/orders'} />} 
-            icon={<BsClipboardFill />} 
+            icon={<BsCartFill />} 
             style={getMenuItemStyles(7)}
             onMouseEnter={() => setHoveredItem(7)}
             onMouseLeave={() => setHoveredItem(null)}

@@ -165,7 +165,7 @@ const styles = {
   },
   textFieldEditable: {
     color: "var(--text-color-primary)",
-    backgroundColor: "var(--secondary-color)",
+    backgroundColor: "#f1eadb",
   },
   textFieldDisabled: {
     color: "var(--text-color-primary)",
