@@ -16,9 +16,13 @@ import {
   TextField,
   Typography,
   Box,
-  Switch,
+  Card,
+  CardContent,
+  CardActions,
+  IconButton,
+  Skeleton,
 } from "@mui/material"
-import { BsPencil, BsTrash, BsPlus, BsUpload } from "react-icons/bs"
+import { BsPencil, BsTrash, BsPlus, BsUpload, BsChevronLeft, BsChevronRight } from "react-icons/bs"
 import axios from "axios"
 
 const Variables = () => {
@@ -34,7 +38,7 @@ const Variables = () => {
 
   const API_PRODUCTS = import.meta.env.VITE_APP_API_PRODUCTS_GET
   const API_VARIABLES = import.meta.env.VITE_APP_API_VARIABLES_GET
-  const bearerToken = JSON.parse(sessionStorage.getItem("access"))
+  const API_URL = import.meta.env.VITE_APP_API_URL
 
   useEffect(() => {
     fetchProducts()
@@ -43,6 +47,7 @@ const Variables = () => {
 
   const fetchProducts = async () => {
     try {
+      const bearerToken = JSON.parse(sessionStorage.getItem("access"))
       const response = await axios.get(API_PRODUCTS, {
         headers: { Authorization: `Bearer ${bearerToken}` },
       })
@@ -55,6 +60,7 @@ const Variables = () => {
 
   const fetchVariables = async () => {
     try {
+      const bearerToken = JSON.parse(sessionStorage.getItem("access"))
       const response = await axios.get(API_VARIABLES, {
         headers: { Authorization: `Bearer ${bearerToken}` },
       })
@@ -77,15 +83,16 @@ const Variables = () => {
       setValue(key, variable[key])
     })
     setPreviews({
-      img1: variable.img1 || null,
-      img2: variable.img2 || null,
-      img3: variable.img3 || null,
+      img1: variable.img1 ? (variable.img1.startsWith("http") ? variable.img1 : `${API_URL}${variable.img1}`) : null,
+      img2: variable.img2 ? (variable.img2.startsWith("http") ? variable.img2 : `${API_URL}${variable.img2}`) : null,
+      img3: variable.img3 ? (variable.img3.startsWith("http") ? variable.img3 : `${API_URL}${variable.img3}`) : null,
     })
     setIsEditModalVisible(true)
   }
 
   const handleDeleteVariable = async (variableId) => {
     try {
+      const bearerToken = JSON.parse(sessionStorage.getItem("access"))
       await axios.delete(`${API_VARIABLES}delete/${variableId}`, {
         headers: { Authorization: `Bearer ${bearerToken}` },
       })
@@ -99,12 +106,11 @@ const Variables = () => {
 
   const onAddSubmit = async (data) => {
     try {
+      const bearerToken = JSON.parse(sessionStorage.getItem("access"))
       const formData = new FormData()
       Object.keys(data).forEach((key) => {
-        if (key === "img1" || key === "img2" || key === "img3") {
-          if (data[key] instanceof FileList && data[key].length > 0) {
-            formData.append(key, data[key][0])
-          }
+        if (data[key] instanceof File) {
+          formData.append(key, data[key])
         } else {
           formData.append(key, data[key])
         }
@@ -122,17 +128,18 @@ const Variables = () => {
       fetchVariables()
     } catch (error) {
       console.error("Error adding variable:", error)
-      alert("Failed to add variable")
+      alert("Failed to add variable. Please check all required fields are filled.")
     }
   }
 
   const onEditSubmit = async (data) => {
     try {
+      const bearerToken = JSON.parse(sessionStorage.getItem("access"))
       const formData = new FormData()
       Object.keys(data).forEach((key) => {
         if (key === "img1" || key === "img2" || key === "img3") {
-          if (data[key] instanceof FileList && data[key].length > 0) {
-            formData.append(key, data[key][0])
+          if (data[key] instanceof File) {
+            formData.append(key, data[key])
           }
         } else {
           formData.append(key, data[key])
@@ -151,7 +158,7 @@ const Variables = () => {
       fetchVariables()
     } catch (error) {
       console.error("Error updating variable:", error)
-      alert("Failed to update variable")
+      alert("Failed to update variable. Please check all required fields are filled.")
     }
   }
 
@@ -163,22 +170,6 @@ const Variables = () => {
         setPreviews((prev) => ({ ...prev, [field]: reader.result }))
       }
       reader.readAsDataURL(file)
-    }
-  }
-
-  const handleIsVariableChange = async (productId, newValue) => {
-    try {
-      await axios.patch(
-        `${API_PRODUCTS}edit/${productId}`,
-        { is_variable: newValue },
-        {
-          headers: { Authorization: `Bearer ${bearerToken}` },
-        },
-      )
-      fetchProducts() // Refresh the products list after updating
-    } catch (error) {
-      console.error("Error updating is_variable:", error)
-      alert("Failed to update product variable status")
     }
   }
 
@@ -194,59 +185,115 @@ const Variables = () => {
       ),
     },
     {
-      id: "is_variable",
-      label: "Acepta Variables",
-      minWidth: 120,
-      render: (value, row) => (
-        <Switch
-          checked={value}
-          onChange={(e) => handleIsVariableChange(row.id_producto, e.target.checked)}
-          color="primary"
-        />
-      ),
-    },
-    {
       id: "variables",
       label: "Variables",
-      minWidth: 170,
+      minWidth: 300,
       render: (_, record) => (
-        <>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
           {variables
             .filter((v) => v.producto === record.id_producto)
             .map((v) => (
-              <Button
+              <VariableCard
                 key={v.id_variante}
-                onClick={() => handleEditVariable(v)}
-                startIcon={<BsPencil />}
-                disabled={!record.is_variable}
-              >
-                {v.nombre}
-              </Button>
+                variable={v}
+                onEdit={handleEditVariable}
+                onDelete={handleDeleteVariable}
+              />
             ))}
-        </>
-      ),
-    },
-    {
-      id: "add",
-      label: "Añadir Variable",
-      minWidth: 100,
-      render: (_, record) => (
-        <Button
-          onClick={() => handleAddVariable(record.id_producto)}
-          startIcon={<BsPlus />}
-          disabled={!record.is_variable}
-        >
-          Añadir Variable
-        </Button>
+          <Button onClick={() => handleAddVariable(record.id_producto)} startIcon={<BsPlus />} variant="outlined">
+            Añadir Variable
+          </Button>
+        </Box>
       ),
     },
   ]
 
+  const VariableCard = ({ variable, onEdit, onDelete }) => {
+    const [currentImageIndex, setCurrentImageIndex] = useState(0)
+    const [imagesLoaded, setImagesLoaded] = useState({})
+    const images = [variable.img1, variable.img2, variable.img3].filter(Boolean)
+
+    const nextImage = () => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length)
+    }
+
+    const prevImage = () => {
+      setCurrentImageIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length)
+    }
+
+    const getImageUrl = (imagePath) => {
+      if (!imagePath) return "/placeholder.svg"
+      return imagePath.startsWith("http") ? imagePath : `${API_URL}${imagePath}`
+    }
+
+    const handleImageLoad = (index) => {
+      setImagesLoaded((prev) => ({ ...prev, [index]: true }))
+    }
+
+    return (
+      <Card sx={{ width: 200, display: "flex", flexDirection: "column" }}>
+        <CardContent>
+          <Typography variant="h6" component="div" noWrap>
+            {variable.nombre}
+          </Typography>
+          <Box
+            sx={{ position: "relative", height: 100, display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            {images.length > 0 ? (
+              <>
+                {!imagesLoaded[currentImageIndex] && (
+                  <Skeleton variant="rectangular" width="100%" height={100} animation="wave" />
+                )}
+                <img
+                  src={getImageUrl(images[currentImageIndex]) || "/placeholder.svg"}
+                  alt={`Variable ${currentImageIndex + 1}`}
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    objectFit: "contain",
+                    display: imagesLoaded[currentImageIndex] ? "block" : "none",
+                  }}
+                  onLoad={() => handleImageLoad(currentImageIndex)}
+                />
+              </>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                No image available
+              </Typography>
+            )}
+            {images.length > 1 && (
+              <>
+                <IconButton size="small" onClick={prevImage} sx={{ position: "absolute", left: 0 }}>
+                  <BsChevronLeft />
+                </IconButton>
+                <IconButton size="small" onClick={nextImage} sx={{ position: "absolute", right: 0 }}>
+                  <BsChevronRight />
+                </IconButton>
+              </>
+            )}
+          </Box>
+        </CardContent>
+        <CardActions>
+          <IconButton onClick={() => onEdit(variable)} size="small">
+            <BsPencil style={{marginRight:"5px"}} />
+            <h6>Editar</h6>
+          </IconButton>
+          <IconButton onClick={() => onDelete(variable.id_variante)} size="small">
+            <BsTrash style={{marginRight:"5px"}}/>
+            <h6>Eliminar</h6>
+          </IconButton>
+        </CardActions>
+      </Card>
+    )
+  }
+
   const renderImageFields = (control, isEdit = false) =>
     ["img1", "img2", "img3"].map((imgField, index) => (
       <Box key={imgField} sx={{ mt: 2 }}>
-        <Typography variant="subtitle1">Imagen {index + 1}</Typography>
-        {(isEdit ? previews[imgField] : null) && (
+        <Typography variant="subtitle1">
+          Imagen {index + 1} {imgField === "img1" && "*"}
+        </Typography>
+        {(isEdit || previews[imgField]) && (
           <Box sx={{ mt: 1, mb: 1 }}>
             <img
               src={previews[imgField] || "/placeholder.svg"}
@@ -259,20 +306,25 @@ const Variables = () => {
           name={imgField}
           control={control}
           defaultValue=""
-          render={({ field: { onChange, ...field } }) => (
-            <Button variant="outlined" component="label" startIcon={<BsUpload />}>
-              {isEdit ? "Cambiar Imagen" : "Subir Imagen"}
-              <input
-                type="file"
-                hidden
-                accept="image/*"
-                onChange={(e) => {
-                  onChange(e.target.files)
-                  handleImageChange(e, imgField)
-                }}
-                {...field}
-              />
-            </Button>
+          rules={imgField === "img1" ? { required: "La imagen 1 es obligatoria" } : {}}
+          render={({ field: { onChange, value, ...field }, fieldState: { error } }) => (
+            <>
+              <Button variant="outlined" component="label" startIcon={<BsUpload />}>
+                {isEdit || previews[imgField] ? "Cambiar Imagen" : "Subir Imagen"}
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0]
+                    onChange(file || null)
+                    handleImageChange(e, imgField)
+                  }}
+                  {...field}
+                />
+              </Button>
+              {error && <Typography color="error">{error.message}</Typography>}
+            </>
           )}
         />
       </Box>
@@ -296,7 +348,7 @@ const Variables = () => {
         fullWidth
         margin="normal"
         value={searchTerm}
-        style={{background:"#f1eadb",marginBottom:"15px"}}
+        style={{ background: "#f1eadb", marginBottom: "15px" }}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
       <TableContainer component={Paper} style={{ width: "100%" }}>
@@ -313,7 +365,7 @@ const Variables = () => {
           <TableBody>
             {filteredProducts.map((row) => {
               return (
-                <TableRow hover role="checkbox" tabIndex={-1} key={row.id_producto}>
+                <TableRow hover tabIndex={-1} key={row.id_producto}>
                   {columns.map((column) => {
                     const value = row[column.id]
                     return <TableCell key={column.id}>{column.render ? column.render(value, row) : value}</TableCell>
@@ -334,23 +386,45 @@ const Variables = () => {
               name="nombre"
               control={addControl}
               defaultValue=""
-              rules={{ required: true }}
-              render={({ field }) => <TextField {...field} label="Nombre" fullWidth margin="normal" />}
+              rules={{ required: "El nombre es obligatorio" }}
+              render={({ field, fieldState: { error } }) => (
+                <>
+                  <TextField {...field} label="Nombre *" fullWidth margin="normal" error={!!error} />
+                  {error && <Typography color="error">{error.message}</Typography>}
+                </>
+              )}
             />
             <Controller
               name="descripcion"
               control={addControl}
               defaultValue=""
-              render={({ field }) => (
-                <TextField {...field} label="Descripción" fullWidth margin="normal" multiline rows={3} />
+              rules={{ required: "La descripción es obligatoria" }}
+              render={({ field, fieldState: { error } }) => (
+                <>
+                  <TextField
+                    {...field}
+                    label="Descripción *"
+                    fullWidth
+                    margin="normal"
+                    multiline
+                    rows={3}
+                    error={!!error}
+                  />
+                  {error && <Typography color="error">{error.message}</Typography>}
+                </>
               )}
             />
             <Controller
               name="precio"
               control={addControl}
               defaultValue=""
-              rules={{ required: true }}
-              render={({ field }) => <TextField {...field} label="Precio" fullWidth margin="normal" type="number" />}
+              rules={{ required: "El precio es obligatorio" }}
+              render={({ field, fieldState: { error } }) => (
+                <>
+                  <TextField {...field} label="Precio *" fullWidth margin="normal" type="number" error={!!error} />
+                  {error && <Typography color="error">{error.message}</Typography>}
+                </>
+              )}
             />
             {renderImageFields(addControl)}
             <Controller
@@ -381,23 +455,45 @@ const Variables = () => {
               name="nombre"
               control={editControl}
               defaultValue=""
-              rules={{ required: true }}
-              render={({ field }) => <TextField {...field} label="Nombre" fullWidth margin="normal" />}
+              rules={{ required: "El nombre es obligatorio" }}
+              render={({ field, fieldState: { error } }) => (
+                <>
+                  <TextField {...field} label="Nombre *" fullWidth margin="normal" error={!!error} />
+                  {error && <Typography color="error">{error.message}</Typography>}
+                </>
+              )}
             />
             <Controller
               name="descripcion"
               control={editControl}
               defaultValue=""
-              render={({ field }) => (
-                <TextField {...field} label="Descripción" fullWidth margin="normal" multiline rows={3} />
+              rules={{ required: "La descripción es obligatoria" }}
+              render={({ field, fieldState: { error } }) => (
+                <>
+                  <TextField
+                    {...field}
+                    label="Descripción *"
+                    fullWidth
+                    margin="normal"
+                    multiline
+                    rows={3}
+                    error={!!error}
+                  />
+                  {error && <Typography color="error">{error.message}</Typography>}
+                </>
               )}
             />
             <Controller
               name="precio"
               control={editControl}
               defaultValue=""
-              rules={{ required: true }}
-              render={({ field }) => <TextField {...field} label="Precio" fullWidth margin="normal" type="number" />}
+              rules={{ required: "El precio es obligatorio" }}
+              render={({ field, fieldState: { error } }) => (
+                <>
+                  <TextField {...field} label="Precio *" fullWidth margin="normal" type="number" error={!!error} />
+                  {error && <Typography color="error">{error.message}</Typography>}
+                </>
+              )}
             />
             {renderImageFields(editControl, true)}
             <Controller

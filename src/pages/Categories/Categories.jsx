@@ -1,28 +1,26 @@
 import { useState, useEffect } from "react"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
+  Card,
+  CardMedia,
+  CardContent,
+  CardActions,
+  Typography,
   Button,
   TextField,
-  IconButton,
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   Switch,
 } from "@mui/material"
-import { BsPlus, BsTrash, BsPencil, BsImage } from "react-icons/bs"
+import { BsPlus, BsTrash, BsPencil } from "react-icons/bs"
 
 const Categories = () => {
   const [categories, setCategories] = useState([])
   const [filteredCategories, setFilteredCategories] = useState([])
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [dialogType, setDialogType] = useState(null) // 'add', 'edit', 'image'
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [form, setForm] = useState({
@@ -34,7 +32,7 @@ const Categories = () => {
 
   const apiGET = import.meta.env.VITE_APP_API_CATEGORIES_GET
   const apiPOST = import.meta.env.VITE_APP_API_CATEGORIES_POST
-  const apiPUT = import.meta.env.VITE_APP_API_CATEGORIES_PUT
+  const apiPATCH = import.meta.env.VITE_APP_API_CATEGORIES_PUT
   const apiDELETE = import.meta.env.VITE_APP_API_CATEGORIES_DELETE
   const token = JSON.parse(sessionStorage.getItem("access"))
 
@@ -77,88 +75,8 @@ const Categories = () => {
     setForm((prev) => ({ ...prev, [name]: !prev[name] }))
   }
 
-  const handleSubmitAdd = async () => {
-    const formData = new FormData()
-    formData.append("nombre", form.nombre)
-    formData.append("descripcion", form.descripcion)
-    if (form.imagen) formData.append("imagen", form.imagen)
-    formData.append("visible", form.visible)
-
-    try {
-      await fetch(apiPOST, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      })
-      fetchCategories()
-      setDialogOpen(false)
-      setForm({ imagen: null, nombre: "", descripcion: "", visible: false })
-    } catch (error) {
-      console.error("Error adding category:", error)
-    }
-  }
-
-  const handleSubmitEdit = async () => {
-    const formData = new FormData()
-    formData.append("nombre", form.nombre)
-    formData.append("descripcion", form.descripcion)
-    formData.append("visible", form.visible)
-
-    try {
-      await fetch(`${apiPUT}${selectedCategory.id}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      })
-      fetchCategories()
-      setDialogOpen(false)
-      setForm({ nombre: "", descripcion: "", visible: false })
-      setSelectedCategory(null)
-    } catch (error) {
-      console.error("Error updating category:", error)
-    }
-  }
-
-  const handleSubmitImage = async () => {
-    const formData = new FormData()
-    formData.append("nombre", selectedCategory.nombre)
-    if (form.imagen) formData.append("imagen", form.imagen)
-    formData.append("visible", selectedCategory.visible)
-
-    try {
-      await fetch(`${apiPUT}${selectedCategory.id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      })
-      fetchCategories()
-      setDialogOpen(false)
-      setForm({ imagen: null, nombre: "", descripcion: "", visible: false })
-      setSelectedCategory(null)
-    } catch (error) {
-      console.error("Error updating image:", error)
-    }
-  }
-
-  const handleEdit = (category) => {
-    setDialogType("edit")
-    setSelectedCategory(category)
-    setForm({
-      nombre: category.nombre,
-      descripcion: category.descripcion,
-      visible: category.visible,
-    })
-    setDialogOpen(true)
-  }
-
   const handleAdd = () => {
-    setDialogType("add")
+    setSelectedCategory(null)
     setForm({
       imagen: null,
       nombre: "",
@@ -168,8 +86,7 @@ const Categories = () => {
     setDialogOpen(true)
   }
 
-  const handleEditImage = (category) => {
-    setDialogType("image")
+  const handleEdit = (category) => {
     setSelectedCategory(category)
     setForm({
       imagen: null,
@@ -180,13 +97,19 @@ const Categories = () => {
     setDialogOpen(true)
   }
 
-  const handleDelete = async (id) => {
+  const handleDelete = (category) => {
+    setSelectedCategory(category)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
     try {
-      await fetch(`${apiDELETE}${id}`, {
+      await fetch(`${apiDELETE}${selectedCategory.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       })
       fetchCategories()
+      setDeleteDialogOpen(false)
     } catch (error) {
       console.error("Error deleting category:", error)
     }
@@ -196,12 +119,44 @@ const Categories = () => {
     setSearchTerm(event.target.value)
   }
 
+  const handleSubmit = async () => {
+    const formData = new FormData()
+    formData.append("nombre", form.nombre)
+    formData.append("descripcion", form.descripcion)
+    if (form.imagen) formData.append("imagen", form.imagen)
+    formData.append("visible", form.visible)
+
+    try {
+      if (selectedCategory) {
+        await fetch(`${apiPATCH}${selectedCategory.id}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        })
+      } else {
+        await fetch(apiPOST, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        })
+      }
+      fetchCategories()
+      setDialogOpen(false)
+    } catch (error) {
+      console.error("Error saving category:", error)
+    }
+  }
+
   return (
-    <div style={{ boxSizing: "border-box", padding: "1.2em" }}>
+    <div style={{ width:"81vw",boxSizing: "border-box", padding: "1.2em" }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
         <TextField
           label="Buscar categoría"
-          style={{ width: "78%", background:"#f1eadb" }}
+          style={{ width: "78%", background: "#f1eadb" }}
           variant="outlined"
           value={searchTerm}
           onChange={handleSearch}
@@ -215,130 +170,109 @@ const Categories = () => {
           Añadir categoría
         </Button>
       </div>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Imagen</TableCell>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Descripción</TableCell>
-              <TableCell>Fecha Creación</TableCell>
-              <TableCell>Fecha Modificación</TableCell>
-              <TableCell>Visible</TableCell>
-              <TableCell>Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredCategories.map((category) => (
-              <TableRow key={category.id}>
-                <TableCell>{category.id}</TableCell>
-                <TableCell>
-                  {category.imagen && (
-                    <img src={category.imagen || "/placeholder.svg"} alt={category.nombre} width="50" height="50" />
-                  )}
-                </TableCell>
-                <TableCell>{category.nombre}</TableCell>
-                <TableCell>{category.descripcion}</TableCell>
-                <TableCell>{category.fecha_creacion}</TableCell>
-                <TableCell>{category.fecha_modificacion}</TableCell>
-                <TableCell>
-                  <Switch checked={category.visible} disabled style={{ color: "var(--primary-color)" }} />
-                </TableCell>
-                <TableCell style={{ width: "8em" }}>
-                  <IconButton
-                    onClick={() => handleEdit(category)}
-                    style={{
-                      color: "var(--primary-color)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <BsPencil />
-                    <h6 style={{ marginLeft: "10px" }}>Editar</h6>
-                  </IconButton>
-                  <IconButton
-                    onClick={() => handleEditImage(category)}
-                    style={{
-                      color: "var(--primary-color)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <BsImage />
-                    <h6 style={{ marginLeft: "10px" }}>Imagen</h6>
-                  </IconButton>
-                  <IconButton
-                    onClick={() => handleDelete(category.id)}
-                    style={{
-                      color: "var(--primary-color)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <BsTrash />
-                    <h6 style={{ marginLeft: "10px" }}>Eliminar</h6>
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(20em, 1fr))",
+          gap: "1rem",
+          justifyContent: "center",
+        }}
+      >
+        {filteredCategories.map((category) => (
+          <Card
+            key={category.id}
+            sx={{
+              width: "20em",
+              height: "400px",
+              display: "flex",
+              flexDirection: "column",
+              margin: "0 auto",
+            }}
+          >
+            <CardMedia
+              component="img"
+              sx={{
+                height: "200px",
+                objectFit: "contain",
+                backgroundColor: "#f0f0f0", // Un fondo neutro para las imágenes
+              }}
+              image={category.imagen || "/placeholder.svg"}
+              alt={category.nombre}
+            />
+            <CardContent sx={{ flexGrow: 1, overflow: "auto" }}>
+              <Typography gutterBottom variant="h5" component="div">
+                {category.nombre}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {category.descripcion}
+              </Typography>
+              <div style={{ display: "flex", alignItems: "center", marginTop: "10px" }}>
+                <Typography variant="body2">Visible:</Typography>
+                <Switch checked={category.visible} disabled style={{ color: "var(--primary-color)" }} />
+              </div>
+            </CardContent>
+            <CardActions>
+              <Button startIcon={<BsPencil />} onClick={() => handleEdit(category)}>
+                Editar
+              </Button>
+              <Button startIcon={<BsTrash />} onClick={() => handleDelete(category)}>
+                Eliminar
+              </Button>
+            </CardActions>
+          </Card>
+        ))}
+      </div>
 
-      {/* Dialog para añadir, editar o editar imagen */}
+      {/* Dialog para añadir o editar categoría */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
-        <DialogTitle>
-          {dialogType === "add" && "Añadir Categoría"}
-          {dialogType === "edit" && "Editar Categoría"}
-          {dialogType === "image" && "Editar Imagen"}
-        </DialogTitle>
+        <DialogTitle>{selectedCategory ? "Editar Categoría" : "Añadir Categoría"}</DialogTitle>
         <DialogContent>
-          {dialogType !== "image" && (
-            <TextField
-              label="Nombre"
-              name="nombre"
-              value={form.nombre}
-              onChange={handleInputChange}
-              required
-              fullWidth
-              margin="dense"
-            />
-          )}
-
-          {dialogType !== "image" && (
-            <TextField
-              label="Descripción"
-              name="descripcion"
-              value={form.descripcion}
-              onChange={handleInputChange}
-              fullWidth
-              margin="dense"
-            />
-          )}
-
-          {dialogType !== "edit" && (
-            <input type="file" accept="image/*" onChange={handleFileChange} style={{ margin: "10px 0" }} />
-          )}
-
-          {dialogType !== "image" && (
-            <div>
-              <label>Visible:</label>
-              <Switch checked={form.visible} onChange={() => handleToggle("visible")} />
-            </div>
-          )}
+          <TextField
+            label="Nombre"
+            name="nombre"
+            value={form.nombre}
+            onChange={handleInputChange}
+            required
+            fullWidth
+            margin="dense"
+          />
+          <TextField
+            label="Descripción"
+            name="descripcion"
+            value={form.descripcion}
+            onChange={handleInputChange}
+            fullWidth
+            margin="dense"
+          />
+          <div style={{display:"flex",flexDirection:"column"}}>
+            <label>Cambiar Imagen</label>
+          <input type="file" accept="image/*" onChange={handleFileChange} style={{ margin: "10px 0" }} />
+          </div>
+          <div>
+            <label>Visible:</label>
+            <Switch checked={form.visible} onChange={() => handleToggle("visible")} />
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancelar</Button>
-          <Button
-            onClick={
-              dialogType === "add" ? handleSubmitAdd : dialogType === "edit" ? handleSubmitEdit : handleSubmitImage
-            }
-            variant="contained"
-          >
-            {dialogType === "add" && "Añadir"}
-            {dialogType === "edit" && "Guardar Cambios"}
-            {dialogType === "image" && "Actualizar Imagen"}
+          <Button onClick={handleSubmit} variant="contained">
+            {selectedCategory ? "Guardar Cambios" : "Añadir"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog para confirmar eliminación */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Confirmar eliminación</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Estás seguro de que quieres eliminar la categoría "{selectedCategory?.nombre}"?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>
+          <Button onClick={confirmDelete} color="error">
+            Eliminar
           </Button>
         </DialogActions>
       </Dialog>
@@ -347,4 +281,5 @@ const Categories = () => {
 }
 
 export default Categories
+
 

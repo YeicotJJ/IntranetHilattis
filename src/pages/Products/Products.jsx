@@ -3,12 +3,6 @@ import axios from "axios"
 import {
   Box,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  TablePagination,
   Dialog,
   DialogActions,
   DialogContent,
@@ -16,47 +10,125 @@ import {
   TextField,
   MenuItem,
   IconButton,
+  Skeleton,
+  Card,
+  CardContent,
+  CardMedia,
+  Typography,
+  Grid,
+  Pagination,
+  FormLabel,
 } from "@mui/material"
-import { BsPlus, BsPencil, BsTrash, BsImage } from "react-icons/bs"
+import { BsPlus, BsPencil, BsTrash, BsChevronLeft, BsChevronRight } from "react-icons/bs"
 import { useForm } from "react-hook-form"
 
-const API_PRODUCTS = import.meta.env.VITE_APP_API_PRODUCTS_GET // URL de productos
-const API_CATEGORIES = import.meta.env.VITE_APP_API_CATEGORIES_GET // URL de categorías
-const bearerToken = JSON.parse(sessionStorage.getItem("access")) // Token de sesión
+const API_PRODUCTS = import.meta.env.VITE_APP_API_PRODUCTS_GET
+const API_CATEGORIES = import.meta.env.VITE_APP_API_CATEGORIES_GET
+const bearerToken = JSON.parse(sessionStorage.getItem("access"))
+
+const ImageSlider = ({ images }) => {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+  }, [])
+
+  const handlePrev = () => {
+    setCurrentIndex((prevIndex) => (prevIndex === 0 ? images.length - 1 : prevIndex - 1))
+  }
+
+  const handleNext = () => {
+    setCurrentIndex((prevIndex) => (prevIndex === images.length - 1 ? 0 : prevIndex + 1))
+  }
+
+  return (
+    <Box position="relative" width="100%" height="150px" margin="8px">
+      {loading && <Skeleton variant="rectangular" width="100%" height={150} />}
+      <CardMedia
+        component="img"
+        image={images[currentIndex] || "/placeholder.svg"}
+        alt={`Product Image ${currentIndex + 1}`}
+        sx={{
+          width: "100%",
+          height: "150px",
+          objectFit: "contain", // Cambiado de "cover" a "contain"
+          display: loading ? "none" : "block",
+          borderRadius: "4px",
+        }}
+        onLoad={() => setLoading(false)}
+        onError={(e) => {
+          e.target.onerror = null
+          e.target.src = "/placeholder.png"
+          setLoading(false)
+        }}
+      />
+      {images.length > 1 && (
+        <>
+          <IconButton
+            onClick={handlePrev}
+            sx={{
+              position: "absolute",
+              left: 8,
+              top: "50%",
+              transform: "translateY(-50%)",
+              bgcolor: "rgba(255,255,255,0.7)",
+            }}
+          >
+            <BsChevronLeft />
+          </IconButton>
+          <IconButton
+            onClick={handleNext}
+            sx={{
+              position: "absolute",
+              right: 8,
+              top: "50%",
+              transform: "translateY(-50%)",
+              bgcolor: "rgba(255,255,255,0.7)",
+            }}
+          >
+            <BsChevronRight />
+          </IconButton>
+        </>
+      )}
+    </Box>
+  )
+}
 
 const Products = () => {
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
-  const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(5)
+  const [page, setPage] = useState(1)
+  const [rowsPerPage] = useState(12)
   const [openDialog, setOpenDialog] = useState(false)
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false) // Nuevo estado para el diálogo de eliminación
-  const [dialogType, setDialogType] = useState("") // 'add', 'edit', 'image', 'delete'
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
+  const [dialogType, setDialogType] = useState("")
   const [selectedProduct, setSelectedProduct] = useState(null)
-  const [openImageDialog, setOpenImageDialog] = useState(false) // Added state for image upload dialog
   const { register, handleSubmit, reset, setValue } = useForm()
   const [searchTerm, setSearchTerm] = useState("")
   const [filteredProducts, setFilteredProducts] = useState([])
 
   useEffect(() => {
-    fetchProducts()
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(API_PRODUCTS, {
+          headers: { Authorization: `Bearer ${bearerToken}` },
+        })
+        setProducts(response.data)
+        setFilteredProducts(response.data)
+      } catch (error) {
+        console.error("Error fetching products:", error)
+      }
+    }
+
+    fetchData()
     fetchCategories()
   }, [])
 
-  useEffect(() => {
-    setFilteredProducts(products)
-  }, [products])
-
-  const fetchProducts = async () => {
-    try {
-      const response = await axios.get(API_PRODUCTS, {
-        headers: { Authorization: `Bearer ${bearerToken}` },
-      })
-      setProducts(response.data)
-    } catch (error) {
-      console.error("Error fetching products:", error)
-    }
-  }
+  // Remove this useEffect
+  // useEffect(() => {
+  //   setFilteredProducts(products);
+  // }, [products]);
 
   const fetchCategories = async () => {
     try {
@@ -106,33 +178,17 @@ const Products = () => {
   }
 
   const handleEditProduct = async (data) => {
-    const updatedData = {
-      nombre: data.nombre,
-      is_variable: data.is_variable === "true",
-      precio: data.precio,
-      descripcion: data.descripcion,
-      estatus: data.estatus,
-      id_categoria: data.id_categoria,
-    }
-
-    try {
-      await axios.patch(`${API_PRODUCTS}edit/${selectedProduct.id_producto}`, updatedData, {
-        headers: { Authorization: `Bearer ${bearerToken}` },
-      })
-      fetchProducts()
-      setOpenDialog(false)
-      reset()
-    } catch (error) {
-      console.error("Error editing product:", error)
-    }
-  }
-
-  const handleImageUpload = async (data) => {
     const formData = new FormData()
+    formData.append("nombre", data.nombre)
+    formData.append("is_variable", data.is_variable === "true")
+    formData.append("precio", data.precio)
+    formData.append("descripcion", data.descripcion)
+    formData.append("estatus", data.estatus)
+    formData.append("id_categoria", data.id_categoria)
 
-    // Include the existing price of the product
-    formData.append("precio", selectedProduct.precio)
-
+    if (data.imagen_default && data.imagen_default[0]) {
+      formData.append("imagen_default", data.imagen_default[0])
+    }
     if (data.img1 && data.img1[0]) {
       formData.append("img1", data.img1[0])
     }
@@ -144,17 +200,17 @@ const Products = () => {
     }
 
     try {
-      await axios.patch(`${API_PRODUCTS}update-images/${selectedProduct.id_producto}`, formData, {
+      await axios.patch(`${API_PRODUCTS}edit/${selectedProduct.id_producto}`, formData, {
         headers: {
           Authorization: `Bearer ${bearerToken}`,
           "Content-Type": "multipart/form-data",
         },
       })
       fetchProducts()
-      setOpenImageDialog(false)
+      setOpenDialog(false)
       reset()
     } catch (error) {
-      console.error("Error uploading images:", error)
+      console.error("Error editing product:", error)
     }
   }
 
@@ -165,7 +221,7 @@ const Products = () => {
       })
       fetchProducts()
       setOpenDeleteDialog(false)
-      setSelectedProduct(null) // Reset product selection
+      setSelectedProduct(null)
     } catch (error) {
       console.error("Error deleting product:", error)
     }
@@ -186,252 +242,143 @@ const Products = () => {
           .includes(searchTerm),
     )
     setFilteredProducts(filtered)
+    setPage(1)
+  }
+
+  const ImagePreview = ({ src, alt }) => {
+    return src ? (
+      <Box mt={1} mb={2}>
+        <img
+          src={src || "/placeholder.svg"}
+          alt={alt}
+          style={{ maxWidth: "100%", maxHeight: "100px", objectFit: "contain" }}
+        />
+      </Box>
+    ) : null
   }
 
   return (
-    <div style={{ boxSizing: "border-box", padding: "1em" }}>
-      <Box>
-        {/* Barra de búsqueda y botón de añadir */}
-        <Box display="flex" justifyContent="space-between" mb={2}>
-          <TextField
-            label="Buscar productos"
-            variant="outlined"
-            value={searchTerm}
-            onChange={handleSearch}
-            style={{ width: "78%", background:"#f1eadb" }}
-          />
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<BsPlus />}
-            onClick={() => {
-              setDialogType("add")
-              setOpenDialog(true)
-            }}
-            style={{background:"var(--terciary-color)"}}
-          >
-            Añadir Producto
-          </Button>
-        </Box>
+    <Box sx={{ boxSizing: "border-box", padding: "1em" }}>
+      <Box display="flex" justifyContent="space-between" mb={2}>
+        <TextField
+          label="Buscar productos"
+          variant="outlined"
+          value={searchTerm}
+          onChange={handleSearch}
+          sx={{ width: "78%", background: "#f1eadb" }}
+        />
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<BsPlus />}
+          onClick={() => {
+            setDialogType("add")
+            setOpenDialog(true)
+          }}
+          sx={{ background: "var(--terciary-color)" }}
+        >
+          Añadir Producto
+        </Button>
+      </Box>
 
-        {/* Tabla de productos */}
-        <Table style={{ backgroundColor: "white", borderRadius:"0.5em" }}>
-          <TableHead>
-            <TableRow>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Imagen</TableCell>
-              <TableCell>Descripción</TableCell>
-              <TableCell>Imágenes Adicionales</TableCell>
-              <TableCell>Precio</TableCell>
-              <TableCell>Estatus</TableCell>
-              <TableCell>Categoría</TableCell>
-              <TableCell>Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredProducts.slice(page * rowsPerPage, (page + 1) * rowsPerPage).map((product) => (
-              <TableRow key={product.id_producto}>
-                <TableCell>{product.nombre}</TableCell>
-                <TableCell>
-                  <img
-                    src={product.imagen_default || "/placeholder.png"}
-                    alt={product.nombre}
-                    style={{ width: "50px", height: "50px", objectFit: "cover" }}
-                  />
-                </TableCell>
-                <TableCell>{product.descripcion}</TableCell>
-                <TableCell>
-                  <div>
-                    {product.img1 && (
-                      <img
-                        src={product.img1 || "/placeholder.svg"}
-                        alt="img1"
-                        style={{ width: "50px", height: "50px", objectFit: "cover" }}
-                      />
-                    )}
-                    {product.img2 && (
-                      <img
-                        src={product.img2 || "/placeholder.svg"}
-                        alt="img2"
-                        style={{ width: "50px", height: "50px", objectFit: "cover" }}
-                      />
-                    )}
-                    {product.img3 && (
-                      <img
-                        src={product.img3 || "/placeholder.svg"}
-                        alt="img3"
-                        style={{ width: "50px", height: "50px", objectFit: "cover" }}
-                      />
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>{product.precio}</TableCell>
-                <TableCell>{product.estatus}</TableCell>
-                <TableCell>
-                  {categories.find((c) => c.id === product.id_categoria)?.nombre || "Sin categoría"}
-                </TableCell>
-                <TableCell style={{ display: "flex", paddingBottom: "2.6em" }}>
+      <Grid container spacing={2}>
+        {filteredProducts.slice((page - 1) * rowsPerPage, page * rowsPerPage).map((product) => (
+          <Grid item xs={12} sm={6} md={4} lg={3} key={product.id_producto}>
+            <Card>
+              <ImageSlider
+                images={[product.imagen_default, product.img1, product.img2, product.img3].filter(Boolean)}
+              />
+              <CardContent>
+                <Typography variant="h6" component="div" noWrap>
+                  {product.nombre}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  {product.descripcion}
+                </Typography>
+                <Typography variant="body1">Precio: S/.{product.precio}</Typography>
+                <Typography variant="body2">Estatus: {product.estatus}</Typography>
+                <Typography variant="body2">
+                  Categoría: {categories.find((c) => c.id === product.id_categoria)?.nombre || "Sin categoría"}
+                </Typography>
+                <Box sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}>
                   <IconButton
                     onClick={() => {
                       setSelectedProduct(product)
                       setDialogType("edit")
+                      setValue("nombre", product.nombre)
+                      setValue("precio", product.precio)
+                      setValue("descripcion", product.descripcion)
                       setValue("estatus", product.estatus)
                       setValue("id_categoria", product.id_categoria)
-                      setValue("descripcion", product.descripcion)
                       setOpenDialog(true)
                     }}
                   >
-                    <BsPencil />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => {
-                      setSelectedProduct({
-                        ...product,
-                        precio: product.precio, // Ensure precio is included
-                      })
-                      setOpenImageDialog(true)
-                    }}
-                  >
-                    <BsImage />
+                    <BsPencil style={{ marginRight: "5px" }} />
+                    <h6>Editar</h6>
                   </IconButton>
                   <IconButton
                     onClick={() => {
                       setSelectedProduct(product)
-                      setOpenDeleteDialog(true) // Mostrar el diálogo de eliminación
+                      setOpenDeleteDialog(true)
                     }}
                   >
-                    <BsTrash />
+                    <BsTrash style={{ marginRight: "5px" }} />
+                    <h6>Eliminar</h6>
                   </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 20, 50]}
-          component="div"
-          count={filteredProducts.length}
-          rowsPerPage={rowsPerPage}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+        <Pagination
+          count={Math.ceil(filteredProducts.length / rowsPerPage)}
           page={page}
-          onPageChange={(e, newPage) => setPage(newPage)}
-          onRowsPerPageChange={(e) => setRowsPerPage(Number.parseInt(e.target.value, 10))}
+          onChange={(event, value) => setPage(value)}
+          color="primary"
         />
+      </Box>
 
-        {/* Diálogo de Confirmación de Eliminación */}
-        <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>¿Estás seguro de eliminar este producto?</DialogTitle>
-          <DialogActions>
-            <Button onClick={() => setOpenDeleteDialog(false)}>Cancelar</Button>
-            <Button onClick={handleDeleteProduct} variant="contained" color="secondary">
-              Eliminar
-            </Button>
-          </DialogActions>
-        </Dialog>
+      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>¿Estás seguro de eliminar este producto?</DialogTitle>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteDialog(false)}>Cancelar</Button>
+          <Button onClick={handleDeleteProduct} variant="contained" color="secondary">
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-        {/* Diálogo para Añadir y Editar Producto */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="sm">
-          <DialogTitle>{dialogType === "add" ? "Añadir Producto" : "Editar Producto"}</DialogTitle>
-          <DialogContent>
-            <form onSubmit={handleSubmit(dialogType === "add" ? handleAddProduct : handleEditProduct)}>
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="sm">
+        <DialogTitle>{dialogType === "add" ? "Añadir Producto" : "Editar Producto"}</DialogTitle>
+        <DialogContent>
+          <form onSubmit={handleSubmit(dialogType === "add" ? handleAddProduct : handleEditProduct)}>
+            <TextField
+              {...register("nombre")}
+              label="Nombre"
+              fullWidth
+              margin="dense"
+              required
+              defaultValue={dialogType === "edit" ? selectedProduct?.nombre : ""}
+            />
+            <Box mt={2}>
+              <FormLabel component="legend">Imagen Principal*</FormLabel>
               <TextField
-                {...register("nombre")}
-                label="Nombre"
+                {...register("imagen_default")}
+                type="file"
+                inputProps={{ accept: "image/*" }}
                 fullWidth
                 margin="dense"
-                required
-                defaultValue={dialogType === "edit" ? selectedProduct?.nombre : ""}
+                required={dialogType === "add"}
               />
-              {dialogType === "add" && (
-                <>
-                  <TextField
-                    {...register("imagen_default")}
-                    type="file"
-                    inputProps={{ accept: "image/*" }}
-                    fullWidth
-                    margin="dense"
-                    required
-                  />
-                  <TextField
-                    {...register("img1")}
-                    type="file"
-                    inputProps={{ accept: "image/*" }}
-                    fullWidth
-                    margin="dense"
-                  />
-                  <TextField
-                    {...register("img2")}
-                    type="file"
-                    inputProps={{ accept: "image/*" }}
-                    fullWidth
-                    margin="dense"
-                  />
-                  <TextField
-                    {...register("img3")}
-                    type="file"
-                    inputProps={{ accept: "image/*" }}
-                    fullWidth
-                    margin="dense"
-                  />
-                </>
+              {dialogType === "edit" && (
+                <ImagePreview src={selectedProduct?.imagen_default || "/placeholder.svg"} alt="Imagen Principal" />
               )}
-              <TextField
-                {...register("descripcion")}
-                label="Descripción"
-                fullWidth
-                margin="dense"
-                required
-                defaultValue={dialogType === "edit" ? selectedProduct?.descripcion : ""}
-              />
-              <TextField
-                {...register("precio")}
-                label="Precio"
-                fullWidth
-                margin="dense"
-                required
-                defaultValue={dialogType === "edit" ? selectedProduct?.precio : ""}
-              />
-              <TextField
-                id="estatus"
-                select
-                label="Estatus"
-                fullWidth
-                margin="dense"
-                defaultValue={dialogType === "edit" ? selectedProduct?.estatus : "DISPONIBLE"}
-                {...register("estatus")}
-              >
-                <MenuItem value="DISPONIBLE">DISPONIBLE</MenuItem>
-                <MenuItem value="AGOTADO">AGOTADO</MenuItem>
-              </TextField>
-              <TextField
-                id="id_categoria"
-                select
-                label="Categoría"
-                fullWidth
-                margin="dense"
-                defaultValue={dialogType === "edit" ? selectedProduct?.id_categoria : ""}
-                {...register("id_categoria")}
-              >
-                {categories.map((category) => (
-                  <MenuItem key={category.id} value={category.id}>
-                    {category.nombre}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <DialogActions>
-                <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
-                <Button type="submit" variant="contained" color="primary">
-                  {dialogType === "add" ? "Añadir" : "Guardar"}
-                </Button>
-              </DialogActions>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        {/* Dialog for Image Upload */}
-        <Dialog open={openImageDialog} onClose={() => setOpenImageDialog(false)} fullWidth maxWidth="sm">
-          <DialogTitle>Upload Additional Images</DialogTitle>
-          <DialogContent>
-            <form onSubmit={handleSubmit(handleImageUpload)}>
+            </Box>
+            <Box mt={2}>
+              <FormLabel component="legend">Imagen Opcional 1</FormLabel>
               <TextField
                 {...register("img1")}
                 type="file"
@@ -439,6 +386,12 @@ const Products = () => {
                 fullWidth
                 margin="dense"
               />
+              {dialogType === "edit" && (
+                <ImagePreview src={selectedProduct?.img1 || "/placeholder.svg"} alt="Imagen Opcional 1" />
+              )}
+            </Box>
+            <Box mt={2}>
+              <FormLabel component="legend">Imagen Opcional 2</FormLabel>
               <TextField
                 {...register("img2")}
                 type="file"
@@ -446,6 +399,12 @@ const Products = () => {
                 fullWidth
                 margin="dense"
               />
+              {dialogType === "edit" && (
+                <ImagePreview src={selectedProduct?.img2 || "/placeholder.svg"} alt="Imagen Opcional 2" />
+              )}
+            </Box>
+            <Box mt={2}>
+              <FormLabel component="legend">Imagen Opcional 3</FormLabel>
               <TextField
                 {...register("img3")}
                 type="file"
@@ -453,17 +412,65 @@ const Products = () => {
                 fullWidth
                 margin="dense"
               />
-              <DialogActions>
-                <Button onClick={() => setOpenImageDialog(false)}>Cancel</Button>
-                <Button type="submit" variant="contained" color="primary">
-                  Upload
-                </Button>
-              </DialogActions>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </Box>
-    </div>
+              {dialogType === "edit" && (
+                <ImagePreview src={selectedProduct?.img3 || "/placeholder.svg"} alt="Imagen Opcional 3" />
+              )}
+            </Box>
+            <TextField
+              {...register("descripcion")}
+              label="Descripción"
+              fullWidth
+              margin="dense"
+              required
+              defaultValue={dialogType === "edit" ? selectedProduct?.descripcion : ""}
+            />
+            <TextField
+              {...register("precio")}
+              label="Precio"
+              fullWidth
+              margin="dense"
+              required
+              defaultValue={dialogType === "edit" ? selectedProduct?.precio : ""}
+            />
+            <TextField
+              id="estatus"
+              select
+              label="Estatus"
+              fullWidth
+              margin="dense"
+              required
+              defaultValue={dialogType === "edit" ? selectedProduct?.estatus : "DISPONIBLE"}
+              {...register("estatus")}
+            >
+              <MenuItem value="DISPONIBLE">DISPONIBLE</MenuItem>
+              <MenuItem value="AGOTADO">AGOTADO</MenuItem>
+            </TextField>
+            <TextField
+              id="id_categoria"
+              select
+              label="Categoría"
+              fullWidth
+              margin="dense"
+              required
+              defaultValue={dialogType === "edit" ? selectedProduct?.id_categoria : ""}
+              {...register("id_categoria")}
+            >
+              {categories.map((category) => (
+                <MenuItem key={category.id} value={category.id}>
+                  {category.nombre}
+                </MenuItem>
+              ))}
+            </TextField>
+            <DialogActions>
+              <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
+              <Button type="submit" variant="contained" color="primary">
+                {dialogType === "add" ? "Añadir" : "Guardar"}
+              </Button>
+            </DialogActions>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </Box>
   )
 }
 

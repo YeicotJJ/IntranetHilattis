@@ -84,7 +84,7 @@ const Projects = () => {
             key={project.id}
             onClick={() => navigate(`/projects/edit/${project.id}`)}
             style={{
-              width: "200px",
+              width: "20.5em",
               border: "1px solid #ccc",
               borderRadius: "10px",
               overflow: "hidden",
