@@ -16,7 +16,7 @@ export default function Generals() {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const apiUrlGET = import.meta.env.VITE_APP_API_EMPRESA_GET;
-  const apiUrlPUT = import.meta.env.VITE_APP_API_EMPRESA_UPDATE;
+  const apiUrlPUT = apiUrlGET+"edit/";
   const token = JSON.parse(sessionStorage.getItem("access"));
 
   useEffect(() => {

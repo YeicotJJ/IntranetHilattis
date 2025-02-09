@@ -20,8 +20,8 @@ const EditProject = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const apiUrlGET = import.meta.env.VITE_APP_API_PROJECTS_GET;
-  const apiUrlPUT = import.meta.env.VITE_APP_API_PROJECTS_PUT;
-  const apiUrlDELETE = import.meta.env.VITE_APP_API_PROJECTS_DELETE;
+  const apiUrlPUT = import.meta.env.VITE_APP_API_PROJECTS_GET+"edit/";
+  const apiUrlDELETE = import.meta.env.VITE_APP_API_PROJECTS_GET+"delete/";
 
   useEffect(() => {
     const fetchProject = async () => {

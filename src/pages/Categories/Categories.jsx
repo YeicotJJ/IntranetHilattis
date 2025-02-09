@@ -31,9 +31,9 @@ const Categories = () => {
   })
 
   const apiGET = import.meta.env.VITE_APP_API_CATEGORIES_GET
-  const apiPOST = import.meta.env.VITE_APP_API_CATEGORIES_POST
-  const apiPATCH = import.meta.env.VITE_APP_API_CATEGORIES_PUT
-  const apiDELETE = import.meta.env.VITE_APP_API_CATEGORIES_DELETE
+  const apiPOST = apiGET+"create"
+  const apiPATCH = apiGET+"edit/"
+  const apiDELETE = apiGET+"delete/"
   const token = JSON.parse(sessionStorage.getItem("access"))
 
   useEffect(() => {
@@ -266,7 +266,7 @@ const Categories = () => {
         <DialogTitle>Confirmar eliminación</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            ¿Estás seguro de que quieres eliminar la categoría "{selectedCategory?.nombre}"?
+            ¿Estás seguro de que quieres eliminar la categoría "{selectedCategory?.nombre}"? Todos los productos que pertenezcan a esta categoria serán eliminados en conjunto
           </DialogContentText>
         </DialogContent>
         <DialogActions>

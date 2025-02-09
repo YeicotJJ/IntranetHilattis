@@ -107,28 +107,24 @@ const Products = () => {
   const { register, handleSubmit, reset, setValue } = useForm()
   const [searchTerm, setSearchTerm] = useState("")
   const [filteredProducts, setFilteredProducts] = useState([])
+  const [forceUpdate, setForceUpdate] = useState(0)
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(API_PRODUCTS, {
-          headers: { Authorization: `Bearer ${bearerToken}` },
-        })
-        setProducts(response.data)
-        setFilteredProducts(response.data)
-      } catch (error) {
-        console.error("Error fetching products:", error)
-      }
-    }
-
-    fetchData()
+    fetchProducts()
     fetchCategories()
   }, [])
 
-  // Remove this useEffect
-  // useEffect(() => {
-  //   setFilteredProducts(products);
-  // }, [products]);
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get(API_PRODUCTS, {
+        headers: { Authorization: `Bearer ${bearerToken}` },
+      })
+      setProducts(response.data)
+      setFilteredProducts(response.data)
+    } catch (error) {
+      console.error("Error fetching products:", error)
+    }
+  }
 
   const fetchCategories = async () => {
     try {
@@ -169,7 +165,7 @@ const Products = () => {
           "Content-Type": "multipart/form-data",
         },
       })
-      fetchProducts()
+      await fetchProducts()
       setOpenDialog(false)
       reset()
     } catch (error) {
@@ -206,7 +202,7 @@ const Products = () => {
           "Content-Type": "multipart/form-data",
         },
       })
-      fetchProducts()
+      await fetchProducts()
       setOpenDialog(false)
       reset()
     } catch (error) {
@@ -219,7 +215,7 @@ const Products = () => {
       await axios.delete(`${API_PRODUCTS}delete/${selectedProduct.id_producto}`, {
         headers: { Authorization: `Bearer ${bearerToken}` },
       })
-      fetchProducts()
+      await fetchProducts()
       setOpenDeleteDialog(false)
       setSelectedProduct(null)
     } catch (error) {
@@ -245,16 +241,46 @@ const Products = () => {
     setPage(1)
   }
 
-  const ImagePreview = ({ src, alt }) => {
-    return src ? (
-      <Box mt={1} mb={2}>
+  const handleDeleteImage = async (imageNumber) => {
+    try {
+      const response = await axios.patch(
+        `${API_PRODUCTS}delete-images/${selectedProduct.id_producto}`,
+        {
+          img1: imageNumber === 1,
+          img2: imageNumber === 2,
+          img3: imageNumber === 3,
+        },
+        {
+          headers: { Authorization: `Bearer ${bearerToken}` },
+        },
+      )
+      if (response.status === 200) {
+        // Actualizar el producto seleccionado localmente
+        setSelectedProduct((prev) => ({ ...prev, [`img${imageNumber}`]: null }))
+        // Forzar una actualización del componente
+        setForceUpdate((prev) => prev + 1)
+        // Actualizar la lista de productos
+        await fetchProducts()
+      }
+    } catch (error) {
+      console.error(`Error deleting image ${imageNumber}:`, error)
+    }
+  }
+
+  const ImagePreview = ({ src, alt, imageNumber }) => {
+    if (!src) return null
+    return (
+      <Box mt={1} mb={2} display="flex" alignItems="center">
         <img
           src={src || "/placeholder.svg"}
           alt={alt}
           style={{ maxWidth: "100%", maxHeight: "100px", objectFit: "contain" }}
         />
+        <Button onClick={() => handleDeleteImage(imageNumber)} variant="outlined" color="secondary" sx={{ ml: 1 }}>
+          Eliminar
+        </Button>
       </Box>
-    ) : null
+    )
   }
 
   return (
@@ -342,7 +368,7 @@ const Products = () => {
       </Box>
 
       <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>¿Estás seguro de eliminar este producto?</DialogTitle>
+        <DialogTitle>¿Estás seguro de eliminar este producto? Todas las variables y el producto se eliminarán</DialogTitle>
         <DialogActions>
           <Button onClick={() => setOpenDeleteDialog(false)}>Cancelar</Button>
           <Button onClick={handleDeleteProduct} variant="contained" color="secondary">
@@ -377,45 +403,55 @@ const Products = () => {
                 <ImagePreview src={selectedProduct?.imagen_default || "/placeholder.svg"} alt="Imagen Principal" />
               )}
             </Box>
-            <Box mt={2}>
-              <FormLabel component="legend">Imagen Opcional 1</FormLabel>
-              <TextField
-                {...register("img1")}
-                type="file"
-                inputProps={{ accept: "image/*" }}
-                fullWidth
-                margin="dense"
-              />
-              {dialogType === "edit" && (
-                <ImagePreview src={selectedProduct?.img1 || "/placeholder.svg"} alt="Imagen Opcional 1" />
-              )}
-            </Box>
-            <Box mt={2}>
-              <FormLabel component="legend">Imagen Opcional 2</FormLabel>
-              <TextField
-                {...register("img2")}
-                type="file"
-                inputProps={{ accept: "image/*" }}
-                fullWidth
-                margin="dense"
-              />
-              {dialogType === "edit" && (
-                <ImagePreview src={selectedProduct?.img2 || "/placeholder.svg"} alt="Imagen Opcional 2" />
-              )}
-            </Box>
-            <Box mt={2}>
-              <FormLabel component="legend">Imagen Opcional 3</FormLabel>
-              <TextField
-                {...register("img3")}
-                type="file"
-                inputProps={{ accept: "image/*" }}
-                fullWidth
-                margin="dense"
-              />
-              {dialogType === "edit" && (
-                <ImagePreview src={selectedProduct?.img3 || "/placeholder.svg"} alt="Imagen Opcional 3" />
-              )}
-            </Box>
+            {dialogType === "edit" && (
+              <>
+                <Box mt={2}>
+                  <FormLabel component="legend">Imagen Opcional 1</FormLabel>
+                  <TextField
+                    {...register("img1")}
+                    type="file"
+                    inputProps={{ accept: "image/*" }}
+                    fullWidth
+                    margin="dense"
+                  />
+                  <ImagePreview
+                    src={selectedProduct?.img1 || "/placeholder.svg"}
+                    alt="Imagen Opcional 1"
+                    imageNumber={1}
+                  />
+                </Box>
+                <Box mt={2}>
+                  <FormLabel component="legend">Imagen Opcional 2</FormLabel>
+                  <TextField
+                    {...register("img2")}
+                    type="file"
+                    inputProps={{ accept: "image/*" }}
+                    fullWidth
+                    margin="dense"
+                  />
+                  <ImagePreview
+                    src={selectedProduct?.img2 || "/placeholder.svg"}
+                    alt="Imagen Opcional 2"
+                    imageNumber={2}
+                  />
+                </Box>
+                <Box mt={2}>
+                  <FormLabel component="legend">Imagen Opcional 3</FormLabel>
+                  <TextField
+                    {...register("img3")}
+                    type="file"
+                    inputProps={{ accept: "image/*" }}
+                    fullWidth
+                    margin="dense"
+                  />
+                  <ImagePreview
+                    src={selectedProduct?.img3 || "/placeholder.svg"}
+                    alt="Imagen Opcional 3"
+                    imageNumber={3}
+                  />
+                </Box>
+              </>
+            )}
             <TextField
               {...register("descripcion")}
               label="Descripción"

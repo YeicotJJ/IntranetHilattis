@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
-import { useForm } from "react-hook-form";
+"use client"
+
+import { useState, useEffect } from "react"
+import { useForm } from "react-hook-form"
 import {
   Button,
   TextField,
@@ -25,97 +26,174 @@ import {
   Tooltip,
   InputAdornment,
   useMediaQuery,
-} from "@mui/material";
-import { BsTrash, BsPencil, BsEye, BsEyeSlash } from "react-icons/bs";
+} from "@mui/material"
+import { BsTrash, BsPencil, BsEye, BsEyeSlash } from "react-icons/bs"
+
+// Preguntas de seguridad ampliadas
+const securityQuestions = [
+  { question: "¿Cuánto es 2 + 3?", answer: "5" },
+  { question: "¿Cuál es la capital de Francia?", answer: "paris" },
+  { question: "¿Cuántos días tiene una semana?", answer: "7" },
+  { question: "¿De qué color es el cielo en un día despejado?", answer: "azul" },
+  { question: "¿Cuántas patas tiene un gato?", answer: "4" },
+  { question: "¿En qué año comenzó la Segunda Guerra Mundial?", answer: "1939" },
+  { question: "¿Cuál es el planeta más grande del sistema solar?", answer: "jupiter" },
+  { question: "¿Cuántos lados tiene un triángulo?", answer: "3" },
+  { question: "¿Cuál es el símbolo químico del oro?", answer: "au" },
+  { question: "¿Cuál es el río más largo del mundo?", answer: "amazonas" },
+  { question: "¿Quién pintó la Mona Lisa?", answer: "leonardo da vinci" },
+  { question: "¿Cuál es el océano más grande?", answer: "pacifico" },
+  { question: "¿Cuántos continentes hay en el mundo?", answer: "7" },
+  { question: "¿Cuál es el metal más abundante en la corteza terrestre?", answer: "aluminio" },
+  { question: "¿En qué año se fundó la ONU?", answer: "1945" },
+]
 
 const Users = () => {
-  const token = JSON.parse(sessionStorage.getItem("access"));
-  const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
-  const [isHelping, setHelping]=useState(false);
-  const sessionUserDni = JSON.parse(sessionStorage.getItem("user-data"))?.dni;
-  const urlFetch=import.meta.env.VITE_APP_API_USERS_GET;
-  const urlReg=import.meta.env.VITE_APP_API_USERS_POST;
-  const isMobile = useMediaQuery("(max-width:600px)");
+  const token = JSON.parse(sessionStorage.getItem("access"))
+  const [users, setUsers] = useState([])
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [isAdding, setIsAdding] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [securityQuestion, setSecurityQuestion] = useState(null)
+  const [securityAnswer, setSecurityAnswer] = useState("")
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm()
+  const [isHelping, setHelping] = useState(false)
+  const sessionUserDni = JSON.parse(sessionStorage.getItem("user-data"))?.dni
+  const urlFetch = import.meta.env.VITE_APP_API_USERS_GET
+  const urlReg = import.meta.env.VITE_APP_API_AUTH_URL + "register"
+  const isMobile = useMediaQuery("(max-width:600px)")
 
   const fetchUsers = async () => {
     try {
-      const { data } = await axios.get(`${urlFetch}`, {
+      const response = await fetch(`${urlFetch}`, {
         headers: { Authorization: `Bearer ${token}` },
-      });
-      setUsers(data);
+      })
+      if (!response.ok) {
+        throw new Error("Network response was not ok")
+      }
+      const data = await response.json()
+      setUsers(data)
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error fetching users:", error)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers()
+  }, [token, urlFetch])
 
   const handleAddUser = async (data) => {
-    try {
-      data.is_active = true;
-      await axios.post(`${urlReg}`, data, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setIsAdding(false);
-      fetchUsers();
-    } catch (error) {
-      console.error("Error adding user:", error);
+    if (securityAnswer.toLowerCase() !== securityQuestion.answer.toLowerCase()) {
+      alert("La respuesta a la pregunta de seguridad es incorrecta")
+      return
     }
-  };
+
+    // Comprobar si el DNI ya existe
+    const dniExists = users.some((user) => user.dni === data.dni)
+    if (dniExists) {
+      alert("El DNI ya existe en el sistema")
+      return
+    }
+
+    try {
+      data.is_active = true
+      const response = await fetch(`${urlReg}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
+      if (!response.ok) {
+        throw new Error("Network response was not ok")
+      }
+      setIsAdding(false)
+      setSecurityQuestion(null)
+      setSecurityAnswer("")
+      fetchUsers()
+    } catch (error) {
+      console.error("Error adding user:", error)
+    }
+  }
 
   const handleEditUser = async (data) => {
     try {
-      await axios.put(`${urlFetch}edit/${selectedUser.dni}`, data, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setIsEditing(false);
-      fetchUsers();
+      const response = await fetch(`${urlFetch}edit/${selectedUser.dni}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
+      if (!response.ok) {
+        throw new Error("Network response was not ok")
+      }
+      setIsEditing(false)
+      fetchUsers()
     } catch (error) {
-      console.error("Error editing user:", error);
+      console.error("Error editing user:", error)
     }
-  };
+  }
 
   const handleChangeState = async (dni, isActive) => {
     try {
-      await axios.put(`${urlFetch}change-state/${dni}`, { is_active: !isActive }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchUsers();
+      const response = await fetch(`${urlFetch}change-state/${dni}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ is_active: !isActive }),
+      })
+      if (!response.ok) {
+        throw new Error("Network response was not ok")
+      }
+      fetchUsers()
     } catch (error) {
-      console.error("Error changing state:", error);
+      console.error("Error changing state:", error)
     }
-  };
+  }
 
   const handleDeleteUser = async (dni) => {
     try {
-      await axios.delete(`${urlFetch}delete/${dni}`, {
+      const response = await fetch(`${urlFetch}delete/${dni}`, {
+        method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
-      });
-      setConfirmDelete(false);
-      fetchUsers();
+      })
+      if (!response.ok) {
+        throw new Error("Network response was not ok")
+      }
+      setConfirmDelete(false)
+      fetchUsers()
     } catch (error) {
-      console.error("Error deleting user:", error);
+      console.error("Error deleting user:", error)
     }
-  };
+  }
 
   const openEditModal = (user) => {
-    setSelectedUser(user);
-    setIsEditing(true);
-    reset(user);
-  };
+    setSelectedUser(user)
+    setIsEditing(true)
+    reset(user)
+  }
 
   const openDeleteModal = (user) => {
-    setSelectedUser(user);
-    setConfirmDelete(true);
-  };
+    setSelectedUser(user)
+    setConfirmDelete(true)
+  }
+
+  const openAddModal = () => {
+    setIsAdding(true)
+    setSecurityQuestion(securityQuestions[Math.floor(Math.random() * securityQuestions.length)])
+  }
 
   if (isMobile) {
     return (
@@ -124,51 +202,48 @@ const Users = () => {
           Para acceder a los usuarios necesita estar en una computadora.
         </Typography>
       </div>
-    );
+    )
   }
 
   return (
     <div
-    
-    style={{
-      marginLeft:"2vw",
-      width:"76.5vw"
-    }}
-
+      style={{
+        marginLeft: "2vw",
+        width: "76.5vw",
+      }}
     >
       <h1>Gestión de Usuarios</h1>
-      <div style={{marginTop:"20px",width:"100%",display:"flex",justifyContent:"space-between"}}>
-      <Button 
-      variant="contained" 
-      color="primary" 
-      onClick={() => setIsAdding(true)}
-        style={{
-          width: "20vw",
-          backgroundColor: "var(--terciary-color)",
-          color: "var(--text-color-secondary)",
-          borderRadius:"0.5vw",
-        }}
+      <div style={{ marginTop: "20px", width: "100%", display: "flex", justifyContent: "space-between" }}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={openAddModal}
+          style={{
+            width: "20vw",
+            backgroundColor: "var(--terciary-color)",
+            color: "var(--text-color-secondary)",
+            borderRadius: "0.5vw",
+          }}
         >
-        Añadir Usuario
-      </Button>
+          Añadir Usuario
+        </Button>
 
-      <Button 
-      variant="contained" 
-      color="primary" 
-      onClick={() => setHelping(true)}
-        style={{
-          width: "20vw",
-          backgroundColor: "var(--terciary-color)",
-          color: "var(--text-color-secondary)",
-          borderRadius:"0.5vw",
-        }}
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => setHelping(true)}
+          style={{
+            width: "20vw",
+            backgroundColor: "var(--terciary-color)",
+            color: "var(--text-color-secondary)",
+            borderRadius: "0.5vw",
+          }}
         >
-        Ayuda
-      </Button>
-      
+          Ayuda
+        </Button>
       </div>
 
-      <TableContainer component={Paper} style={{ marginTop: "20px",maxWidth:"76.5vw" }}>
+      <TableContainer component={Paper} style={{ marginTop: "20px", maxWidth: "76.5vw" }}>
         <Table>
           <TableHead>
             <TableRow>
@@ -203,10 +278,7 @@ const Users = () => {
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Eliminar">
-                    <IconButton
-                      onClick={() => openDeleteModal(user)}
-                      disabled={user.is_active}
-                    >
+                    <IconButton onClick={() => openDeleteModal(user)} disabled={user.is_active}>
                       <BsTrash />
                     </IconButton>
                   </Tooltip>
@@ -224,7 +296,15 @@ const Users = () => {
         </Table>
       </TableContainer>
 
-      <Dialog open={isAdding || isEditing} onClose={() => { setIsAdding(false); setIsEditing(false); }}>
+      <Dialog
+        open={isAdding || isEditing}
+        onClose={() => {
+          setIsAdding(false)
+          setIsEditing(false)
+          setSecurityQuestion(null)
+          setSecurityAnswer("")
+        }}
+      >
         <DialogTitle>{isAdding ? "Añadir Usuario" : "Editar Usuario"}</DialogTitle>
         <form onSubmit={handleSubmit(isAdding ? handleAddUser : handleEditUser)}>
           <DialogContent>
@@ -323,18 +403,44 @@ const Users = () => {
                     defaultValue={null}
                     {...register("rol", { required: true })}
                     error={!!errors.rol}
-                    helperText={errors.address && "El rol es obligatorio"}
+                    disabled={isEditing && selectedUser.dni === sessionUserDni}
                   >
                     <MenuItem value="admin">Administrador</MenuItem>
                     <MenuItem value="default">Trabajador</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
+              {isAdding && securityQuestion && (
+                <Grid item xs={12}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Pregunta de seguridad (minúsculas): {securityQuestion.question}
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    label="Respuesta"
+                    value={securityAnswer}
+                    onChange={(e) => setSecurityAnswer(e.target.value)}
+                    error={!!errors.securityAnswer}
+                    helperText={errors.securityAnswer && "La respuesta es obligatoria"}
+                  />
+                </Grid>
+              )}
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => { setIsAdding(false); setIsEditing(false); }}>Cancelar</Button>
-            <Button type="submit" color="primary">Guardar</Button>
+            <Button
+              onClick={() => {
+                setIsAdding(false)
+                setIsEditing(false)
+                setSecurityQuestion(null)
+                setSecurityAnswer("")
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" color="primary">
+              Guardar
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
@@ -346,10 +452,7 @@ const Users = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmDelete(false)}>Cancelar</Button>
-          <Button
-            color="error"
-            onClick={() => handleDeleteUser(selectedUser.dni)}
-          >
+          <Button color="error" onClick={() => handleDeleteUser(selectedUser.dni)}>
             Eliminar
           </Button>
         </DialogActions>
@@ -366,16 +469,14 @@ const Users = () => {
           </ul>
         </DialogContent>
         <DialogActions>
-          <Button
-            color="blue"
-            onClick={() => setHelping(false)}
-          >
+          <Button color="primary" onClick={() => setHelping(false)}>
             Entendido
           </Button>
         </DialogActions>
       </Dialog>
     </div>
-  );
-};
+  )
+}
 
-export default Users;
+export default Users
+

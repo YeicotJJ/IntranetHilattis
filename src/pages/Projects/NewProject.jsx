@@ -13,7 +13,7 @@ const NewProject = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const apiUrlPOST = import.meta.env.VITE_APP_API_PROJECTS_POST;
+  const apiUrlPOST = import.meta.env.VITE_APP_API_PROJECTS_GET+"create";
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
